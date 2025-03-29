@@ -1,7 +1,7 @@
-# Rick and Morty Dashboard
+# MicroTech Dashboard
 
 ## Getting started
-Below are the steps to guide you through preparing your local enviroment for the Dashboard.
+Below are the steps to guide you through preparing your local environment for the Dashboard.
 
 ### Prerequisites
 
@@ -16,39 +16,48 @@ To begin, ensure you have network access. Then, you'll need the following:
 Clone the repository using HTTPS, SSH, or Github CLI
 
 ```bash
-git@github.com:puranban/rick-and-morty-dashboard.git #SSH
-https://github.com/puranban/rick-and-morty-dashboard.git #HTTPS
-gh repo clone puranban/rick-and-morty-dashboard #Github CLI
+git@github.com:jun0tech/micro-tech-frontend.git #SSH
+https://github.com/jun0tech/micro-tech-frontend.git #HTTPS
+gh repo clone jun0tech/micro-tech-frontend #Github CLI
 ```
+
 * Navigate to the project directory
+
 ```bash
-cd rick-and-morty-dashboard
+cd micro-tech-frontend
 ```
+
 * Create environment variables
+
 ```bash
 touch .env
 ```
 
 * Update the .env file with the API url
+
 ```bash
-APP_GRAPHQL_ENDPOINT=https://rickandmortyapi.com/graphql
+APP_GRAPHQL_ENDPOINT= http://localhost:8000 #eg.
 ```
 
 * Install dependencies
+
 ```bash
 pnpm install
 ```
+
 * Generate type
 ```bash
 pnpm generate:type
 ```
 
 * Start local development server
+
 ```bash
 pnpm dev
 ```
 
 * Use this credentials for login
+
 ```bash
 username: admin
 password: admin
