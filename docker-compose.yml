@@ -1,0 +1,18 @@
+# NOTE: Define COMPOSE_PROJECT_NAME in .env to use custom name
+name: microtech
+
+services:
+  react:
+    build: .
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: development
+    ports:
+      - 127.0.0.1:3000:3000
+    stdin_open: true
+    tty: true
+    command: sh -c 'pnpm dev'
+
