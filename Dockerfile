@@ -1,5 +1,5 @@
 # Use official Node.js image with Alpine
-FROM node:20-alpine
+FROM node:23-alpine
 
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
@@ -11,7 +11,7 @@ WORKDIR /app
 COPY pnpm-lock.yaml package.json ./
 
 # Install dependencies
-RUN pnpm install --frozen-lockfile
+RUN pnpm install
 
 # Copy all files
 COPY . /app
