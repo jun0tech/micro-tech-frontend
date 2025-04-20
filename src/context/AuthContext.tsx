@@ -1,12 +1,14 @@
 import { createContext, useState } from 'react';
 
 interface AuthContextType {
+  loading: boolean;
   user: string | null;
   login: (username: string, password: string) => boolean;
   logout: () => boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({
+  loading: true,
   user: null,
   login: () => false,
   logout: () => false,
@@ -19,6 +21,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const storedUser = localStorage.getItem("user");
     return storedUser ?? null;
   });
+  const [loading, setLoading] = useState<boolean>(false);
 
   const login = (username: string, password: string): boolean => {
     const userFound = MOCK_USERS.find(
@@ -29,6 +32,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(userFound.username);
       localStorage.setItem("user", userFound.username);
 
+      setLoading(false);
       return true;
     }
 
@@ -43,7 +47,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{user, login, logout }}>
+    <AuthContext.Provider value={{loading, user, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

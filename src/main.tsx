@@ -9,6 +9,7 @@ import {
 import './index.css';
 import App from './App.tsx';
 import { Provider } from '#components/ui/provider.tsx';
+import { AuthProvider } from './context/AuthContext.tsx';
 
 const GRAPHQL_ENDPOINT = import.meta.env.APP_GRAPHQL_ENDPOINT as string;
 
@@ -21,9 +22,11 @@ const root = createRoot(document.getElementById('root')!);
 root.render(
   <StrictMode>
     <ApolloProvider client={client}>
-      <Provider>
-        <App />
-      </Provider>
+      <AuthProvider>
+        <Provider>
+          <App />
+        </Provider>
+      </AuthProvider>
     </ApolloProvider>
   </StrictMode>,
 );
