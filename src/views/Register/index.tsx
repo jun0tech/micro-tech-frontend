@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FiEye, FiEyeOff } from 'react-icons/fi';
-import { Button, Field, Input, InputGroup } from '@chakra-ui/react';
+import { Field, Input, InputGroup } from '@chakra-ui/react';
 import { SubmitHandler, useForm } from 'react-hook-form';
 
 import { useAuth } from '#hooks/useAuth';
+import { Button } from '#components/ui/button';
 
 interface FormValues {
   firstName: string;
@@ -153,8 +154,9 @@ const Register: React.FC = () => {
           </div>
 
           <Button
-            type="submit" 
-            isLoading={loading}
+            size="2xl"
+            type="submit"
+            loading={loading}
           >
             Submit Registration Request
           </Button>
