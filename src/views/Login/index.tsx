@@ -1,111 +1,159 @@
-import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { FiEye, FiEyeOff } from 'react-icons/fi';
-import { SubmitHandler, useForm } from 'react-hook-form';
-import { Field, Input, InputGroup } from '@chakra-ui/react';
+"use client"
 
-import { useAuth } from '#hooks/useAuth';
-import { Button } from '#components/ui/button';
+import { useState } from "react";
+import { Link as RouterLink } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import {
+  Box,
+  Button,
+  Input,
+  Heading,
+  Text,
+  Link,
+  HStack,
+  Checkbox,
+  Stack,
+  Field,
+} from "@chakra-ui/react";
+import { useAuth } from "../../hooks/useAuth";
+import { toaster } from "#components/ui/toaster";
+import { PasswordInput } from "#components/ui/password-input";
 
-interface FormValues {
-  username: string;
-  password: string;
+interface LoginFormValues {
+  email: string
+  password: string
+  rememberMe: boolean
 }
 
-const Login: React.FC = () => {
+const Login = () => {
+  const { login } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+
   const {
-    getValues,
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<FormValues>()
+  } = useForm<LoginFormValues>({
+    defaultValues: {
+      email: "",
+      password: "",
+      rememberMe: false,
+    },
+  })
 
-  const [showPassword, setShowPassword] = useState(false);
-
-  const { login, user, loading } = useAuth();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (user) {
-      void navigate('/dashboard');
-    }
-  }, [user, navigate]);
-
-  const onSubmit: SubmitHandler<FormValues> = (formValues) => {
+  const onSubmit = async (data: LoginFormValues) => {
     try {
-      login(formValues.username, formValues.password);
-    } catch (err) {
-      console.error('Login error:', err);
+      setIsLoading(true)
+      await login(data.email, data.password)
+      toaster.create({
+        title: "Login successful",
+        type: "success",
+        duration: 3000,
+        closable: true,
+      })
+    } catch (error) {
+      toaster.create({
+        title: "Login failed",
+        type: "error",
+        description: "Invalid email or password",
+        duration: 3000,
+        closable: true,
+      })
+    } finally {
+      setIsLoading(false)
     }
-  };
-
-  const toggleShowPassword = () => {
-    setShowPassword(!showPassword);
-  };
+  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-sm p-8">
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">Welcome to Procurement Pro</h1>
-          <p className="text-gray-600">Sign in to access your procurement dashboard</p>
-        </div>
+    <Box
+      minH="100vh"
+      bg="gray.50"
+      py={12}
+      px={4}
+      display="flex"
+      alignItems="center"
+      justifyContent="center"
+    >
+      <Box
+        w={{ base: "90%", md: "450px" }}
+        p={8}
+        borderRadius="lg"
+        boxShadow="lg"
+        bg="white"
+      >
+        <Stack gap={6}>
+          <Box textAlign="center">
+            <Heading size="lg" mb={2}>
+              Welcome Back
+            </Heading>
+            <Text color="gray.600">Sign in to your account</Text>
+          </Box>
 
-        {errors && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-md text-sm">
-            {errors.root?.message}
-          </div>
-        )}
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <Stack gap={4}>
+              <Field.Root invalid={!!errors.email}>
+                <Field.Label>Email</Field.Label>
+                <Input
+                  type="email"
+                  placeholder="Enter your email"
+                  {...register("email", {
+                    required: "Email is required",
+                    pattern: {
+                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                      message: "Invalid email address",
+                    },
+                  })}
+                />
+                <Field.ErrorText>{errors.email?.message}</Field.ErrorText>
+              </Field.Root>
 
-        <form onSubmit={() => handleSubmit(onSubmit)} className="space-y-6">
-          <Field.Root invalid={!!errors.username}>
-            <Field.Label>Email</Field.Label>
-            <Input {...register("username")} disabled={loading} />
-            <Field.ErrorText>{errors.username?.message}</Field.ErrorText>
-          </Field.Root>
+              <Field.Root invalid={!!errors.password}>
+                <Field.Label>Password</Field.Label>
+                <PasswordInput
+                  placeholder="Enter your password"
+                  {...register("password", {
+                    required: "Password is required",
+                    minLength: {
+                      value: 6,
+                      message: "Password must be at least 6 characters",
+                    },
+                  })}
+                />
+                <Field.ErrorText>{errors.password?.message}</Field.ErrorText>
+              </Field.Root>
 
-          <Field.Root invalid={!!errors.password}>
-            <Field.Label>Password</Field.Label>
-            <InputGroup endElement={(
-                <button
-                  type="button"
-                  onClick={toggleShowPassword}
-                  className="focus:outline-none"
-                >
-                  {showPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
-                </button>
-            )}>
-              <Input {...register("password")} disabled={loading} />
-            </InputGroup>
-            <Field.ErrorText>{errors.password?.message}</Field.ErrorText>
-          </Field.Root>
+              <HStack justify="space-between">
+                <Checkbox.Root {...register("rememberMe")}>
+                  <Checkbox.Control />
+                  <Checkbox.Label>Remember me</Checkbox.Label>
+                </Checkbox.Root>
+                <Link color="blue.600" fontSize="sm">
+                  Forgot password?
+                </Link>
+              </HStack>
 
-            <div className="mt-2 text-right">
-              <Link to="/forgot-password" className="text-sm text-purple-600 hover:text-purple-800">
-                Forgot password?
-              </Link>
-            </div>
+              <Button
+                type="submit"
+                size="lg"
+                width="full"
+                loading={isLoading}
+                loadingText="Signing in..."
+              >
+                Sign In
+              </Button>
+            </Stack>
+          </form>
 
-          <Button
-            type="submit"
-            // fullWidth
-            disabled={loading}
-          >
-            Sign In
-          </Button>
-        </form>
+          <Text textAlign="center">
+            Don't have an account?{" "}
+            <RouterLink to="/register" style={{ color: "var(--chakra-colors-blue-600)" }}>
+              Sign up
+            </RouterLink>
+          </Text>
+        </Stack>
+      </Box>
+    </Box>
+  )
+}
 
-        <div className="mt-6 text-center">
-          <p className="text-sm text-gray-600">
-            Don't have an account?{' '}
-            <Link to="/register" className="text-purple-600 hover:text-purple-800 font-medium">
-              Register
-            </Link>
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default Login;
+export default Login

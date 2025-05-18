@@ -1,19 +1,25 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { FiEye, FiEyeOff } from 'react-icons/fi';
-import { Field, Input, InputGroup } from '@chakra-ui/react';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import {
+  Field,
+  Input,
+  Box,
+  Heading,
+  Text,
+  Alert,
+  SimpleGrid,
+  Checkbox,
+  Flex,
+  Stack
+} from '@chakra-ui/react';
 import { SubmitHandler, useForm } from 'react-hook-form';
 
 import { useAuth } from '#hooks/useAuth';
 import { Button } from '#components/ui/button';
+import { PasswordInput } from '#components/ui/password-input';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { RegisterFormSchema, schema } from './schema';
 
-interface FormValues {
-  firstName: string;
-  lastName: string;
-  email: string;
-  password: string;
-  confirmPassword: string;
-}
 
 const Register: React.FC = () => {
   const {
@@ -23,13 +29,27 @@ const Register: React.FC = () => {
     setError,
     formState: { errors },
     reset,
-  } = useForm<FormValues>();
+  } = useForm<RegisterFormSchema>(
+    {
+      defaultValues: {
+        firstName: "",
+        lastName: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+        terms: false,
+      },
+      mode: "onSubmit",
+      resolver: zodResolver(schema),
+    }
+  );
 
   const navigate = useNavigate();
   const { user, loading } = useAuth();
 
   const [showPassword, setShowPassword] = useState(false);
 
+  console.log(errors.root?.message);
 
   useEffect(() => {
     if (user) {
@@ -37,7 +57,7 @@ const Register: React.FC = () => {
     }
   }, [user, navigate]);
 
-  const onSubmit: SubmitHandler<FormValues> = (formValues) => {
+  const onSubmit: SubmitHandler<RegisterFormSchema> = (formValues) => {
     try {
       const registerSuccess = true;
       if (registerSuccess) {
@@ -61,117 +81,112 @@ const Register: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-sm p-8">
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">Create Account</h1>
-          <p className="text-gray-600">Fill in your details to request access to the procurement system</p>
-        </div>
+    <Box
+      minH="100vh"
+      bg="gray.50"
+      borderRadius="lg"
+      boxShadow="lg"
+      py={12}
+      px={4}
+      display="flex"
+      alignItems="center"
+      justifyContent="center"
+    >
+      <Box
+        w={{ base: "90%", md: "450px" }}
+        p={8}
+        borderRadius="lg"
+        boxShadow="lg"
+      >
+        <Stack gap={8} align="stretch">
+          <Box textAlign="center">
+            <Heading as="h1" size="lg" mb={1}>Create Account</Heading>
+            <Text color="gray.600">Fill in your details to request access to the procurement system</Text>
+          </Box>
 
-        {errors && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-md text-sm">
-            {errors.root?.message}
-          </div>
-        )}
+          {errors.root?.message && (
+            <Alert.Root status="error" variant="subtle" rounded="md">
+              <Alert.Indicator />
+              <Alert.Title>
+                {errors.root?.message}
+              </Alert.Title>
+            </Alert.Root>
+          )}
 
-        <form onSubmit={() => handleSubmit(onSubmit)} className="space-y-4">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <Field.Root invalid={!!errors.firstName}>
-              <Field.Label>First Name</Field.Label>
-              <Input {...register("firstName")} disabled={loading} />
-              <Field.ErrorText>{errors.firstName?.message}</Field.ErrorText>
-            </Field.Root>
+          <form onSubmit={() => handleSubmit(onSubmit)}>
+            <Stack gap={4}>
+              <SimpleGrid columns={{ base: 1, md: 2 }} gap={4} w="full">
+                <Field.Root invalid={!!errors.firstName}>
+                  <Field.Label>First Name</Field.Label>
+                  <Input {...register("firstName")} disabled={loading} />
+                  <Field.ErrorText>{errors.firstName?.message}</Field.ErrorText>
+                </Field.Root>
 
-            <Field.Root invalid={!!errors.lastName}>
-              <Field.Label>Last Name</Field.Label>
-              <Input {...register("lastName")} disabled={loading} />
-              <Field.ErrorText>{errors.lastName?.message}</Field.ErrorText>
-            </Field.Root>
-          </div>
+                <Field.Root invalid={!!errors.lastName}>
+                  <Field.Label>Last Name</Field.Label>
+                  <Input {...register("lastName")} disabled={loading} />
+                  <Field.ErrorText>{errors.lastName?.message}</Field.ErrorText>
+                </Field.Root>
+              </SimpleGrid>
 
-          <Field.Root invalid={!!errors.email}>
-            <Field.Label>Email</Field.Label>
-            <Input {...register("email")} disabled={loading} />
-            <Field.ErrorText>{errors.email?.message}</Field.ErrorText>
-          </Field.Root>
+              <Field.Root invalid={!!errors.email}>
+                <Field.Label>Email</Field.Label>
+                <Input {...register("email")} disabled={loading} />
+                <Field.ErrorText>{errors.email?.message}</Field.ErrorText>
+              </Field.Root>
 
-          <Field.Root invalid={!!errors.password}>
-            <Field.Label>Password</Field.Label>
-            <InputGroup endElement={(
-              <button
-                type="button"
-                onClick={toggleShowPassword}
-                className="focus:outline-none"
+              <Field.Root invalid={!!errors.password}>
+                <Field.Label>Password</Field.Label>
+                <PasswordInput
+                  {...register("password")}
+                  disabled={loading}
+                // onVisibleChange={toggleShowPassword}
+                />
+                <Field.ErrorText>{errors.password?.message}</Field.ErrorText>
+              </Field.Root>
+
+              <Field.Root invalid={!!errors.confirmPassword}>
+                <Field.Label>Confirm Password</Field.Label>
+                <PasswordInput
+                  {...register("confirmPassword")}
+                  disabled={loading}
+                // onVisibleChange={handleConfirmPasswordChange}
+                />
+                <Field.ErrorText>{errors.confirmPassword?.message}</Field.ErrorText>
+              </Field.Root>
+
+              <Flex alignItems="start">
+                <Checkbox.Root
+                  id="terms"
+                  colorScheme="purple"
+                >
+                  <Checkbox.Control />
+                  <Checkbox.Label>I agree to the terms of service and privacy policy</Checkbox.Label>
+                </Checkbox.Root>
+              </Flex>
+
+              <Button
+                size="2xl"
+                type="submit"
+                loading={loading}
+                w="full"
               >
-                {showPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
-              </button>
-            )}>
-              <Input
-                type={showPassword ? "text" : "password"}
-                {...register("password")}
-                disabled={loading}
-              />
-            </InputGroup>
-            <Field.ErrorText>{errors.password?.message}</Field.ErrorText>
-          </Field.Root>
+                Submit Registration Request
+              </Button>
+            </Stack>
+          </form>
 
-          <Field.Root invalid={!!errors.confirmPassword}>
-            <Field.Label>Confirm Password</Field.Label>
-            <InputGroup endElement={(
-              <button
-                type="button"
-                onClick={toggleShowPassword}
-                className="focus:outline-none"
-              >
-                {showPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
-              </button>
-            )}>
-              <Input
-                type={showPassword ? "text" : "password"}
-                name="confirmPassword"
-                onChange={handleConfirmPasswordChange}
-                // {...register("confirmPassword")}
-                disabled={loading}
-              />
-            </InputGroup>
-            <Field.ErrorText>{errors.confirmPassword?.message}</Field.ErrorText>
-          </Field.Root>
-
-          <div className="flex items-start">
-            <div className="flex items-center h-5">
-              <input
-                id="terms"
-                type="checkbox"
-                required
-                className="h-4 w-4 border-gray-300 rounded text-purple-600 focus:ring-purple-500"
-              />
-            </div>
-            <div className="ml-3 text-sm">
-              <label htmlFor="terms" className="text-gray-700">
-                I agree to the terms of service and privacy policy
-              </label>
-            </div>
-          </div>
-
-          <Button
-            size="2xl"
-            type="submit"
-            loading={loading}
-          >
-            Submit Registration Request
-          </Button>
-        </form>
-
-        <div className="mt-6 text-center">
-          <p className="text-sm text-gray-600">
-            Already have an account?{' '}
-            <Link to="/login" className="text-purple-600 hover:text-purple-800 font-medium">
-              Sign In
-            </Link>
-          </p>
-        </div>
-      </div>
-    </div>
+          <Box textAlign="center" mt={6}>
+            <Text textAlign="center">
+              Already have an account?{" "}
+              <RouterLink to="/login" style={{ color: "var(--chakra-colors-blue-600)" }}>
+                Sign in
+              </RouterLink>
+            </Text>
+          </Box>
+        </Stack>
+      </Box>
+    </Box>
   );
 };
 
