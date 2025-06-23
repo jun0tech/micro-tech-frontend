@@ -1,64 +1,54 @@
-# MicroTech Dashboard
+# React + TypeScript + Vite
 
-## Getting started
-Below are the steps to guide you through preparing your local environment for the Dashboard.
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-### Prerequisites
+Currently, two official plugins are available:
 
-To begin, ensure you have network access. Then, you'll need the following:
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
-1. [Git](https://git-scm.com/)
-2. [Node.JS](https://nodejs.org/en/) version >=22
-3. [Pnpm](https://pnpm.io/)
+## Expanding the ESLint configuration
 
-### Local development
+If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
 
-Clone the repository using HTTPS, SSH, or Github CLI
-
-```bash
-git@github.com:jun0tech/micro-tech-frontend.git #SSH
-https://github.com/jun0tech/micro-tech-frontend.git #HTTPS
-gh repo clone jun0tech/micro-tech-frontend #Github CLI
+```js
+export default tseslint.config({
+  extends: [
+    // Remove ...tseslint.configs.recommended and replace with this
+    ...tseslint.configs.recommendedTypeChecked,
+    // Alternatively, use this for stricter rules
+    ...tseslint.configs.strictTypeChecked,
+    // Optionally, add this for stylistic rules
+    ...tseslint.configs.stylisticTypeChecked,
+  ],
+  languageOptions: {
+    // other options...
+    parserOptions: {
+      project: ['./tsconfig.node.json', './tsconfig.app.json'],
+      tsconfigRootDir: import.meta.dirname,
+    },
+  },
+})
 ```
 
-* Navigate to the project directory
+You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
 
-```bash
-cd micro-tech-frontend
-```
+```js
+// eslint.config.js
+import reactX from 'eslint-plugin-react-x'
+import reactDom from 'eslint-plugin-react-dom'
 
-* Create environment variables
-
-```bash
-touch .env
-```
-
-* Update the .env file with the API url
-
-```bash
-APP_GRAPHQL_ENDPOINT= http://localhost:8000 #eg.
-```
-
-* Install dependencies
-
-```bash
-pnpm install
-```
-
-* Generate type
-```bash
-pnpm generate:type
-```
-
-* Start local development server
-
-```bash
-pnpm dev
-```
-
-* Use this credentials for login
-
-```bash
-username: admin
-password: admin
+export default tseslint.config({
+  plugins: {
+    // Add the react-x and react-dom plugins
+    'react-x': reactX,
+    'react-dom': reactDom,
+  },
+  rules: {
+    // other rules...
+    // Enable its recommended typescript rules
+    ...reactX.configs['recommended-typescript'].rules,
+    ...reactDom.configs.recommended.rules,
+  },
+})
 ```
