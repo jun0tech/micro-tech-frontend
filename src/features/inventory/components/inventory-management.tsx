@@ -24,36 +24,29 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  useDeleteInventoryItem,
+  useInventoryItemsWithStatus,
+} from "@/services/inventory/useInventory";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   AlertTriangle,
   Clock,
   Edit,
   Eye,
+  Loader2,
   MoreHorizontal,
   Package,
   Plus,
   Search,
+  Trash2,
   XCircle,
 } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router";
+import { toast } from "sonner";
 import { z } from "zod";
-
-interface InventoryItem {
-  id: string;
-  itemCode: string;
-  itemName: string;
-  category: string;
-  inStock: number;
-  unit: string;
-  reorderLevel: number;
-  lastUpdated: string;
-  brand: string;
-  supplierName: string;
-  status: "in-stock" | "low-stock" | "out-of-stock";
-}
 
 const inventoryFiltersSchema = z.object({
   searchQuery: z.string().optional(),
@@ -64,103 +57,11 @@ const inventoryFiltersSchema = z.object({
 
 type InventoryFiltersValues = z.infer<typeof inventoryFiltersSchema>;
 
-const mockInventoryItems: InventoryItem[] = [
-  {
-    id: "1",
-    itemCode: "INV-1001",
-    itemName: "Oil Bar Saddle",
-    category: "Electrical",
-    inStock: 145,
-    unit: "Pieces",
-    reorderLevel: 50,
-    lastUpdated: "2023-11-15",
-    brand: "TechCorp",
-    supplierName: "Global Tech Solutions",
-    status: "in-stock",
-  },
-  {
-    id: "2",
-    itemCode: "INV-1002",
-    itemName: "Copper Wire",
-    category: "Electrical",
-    inStock: 320,
-    unit: "Meters",
-    reorderLevel: 100,
-    lastUpdated: "2023-11-12",
-    brand: "WirePro",
-    supplierName: "EcoPackaging Inc.",
-    status: "in-stock",
-  },
-  {
-    id: "3",
-    itemCode: "INV-1003",
-    itemName: "Cement",
-    category: "Construction",
-    inStock: 24,
-    unit: "Bags",
-    reorderLevel: 30,
-    lastUpdated: "2023-11-10",
-    brand: "CementMax",
-    supplierName: "Green Materials Co.",
-    status: "low-stock",
-  },
-  {
-    id: "4",
-    itemCode: "INV-1004",
-    itemName: "Steel Rods",
-    category: "Construction",
-    inStock: 75,
-    unit: "Pieces",
-    reorderLevel: 25,
-    lastUpdated: "2023-11-08",
-    brand: "SteelPro",
-    supplierName: "Precision Parts Ltd.",
-    status: "in-stock",
-  },
-  {
-    id: "5",
-    itemCode: "INV-1005",
-    itemName: "PVC Pipes",
-    category: "Plumbing",
-    inStock: 0,
-    unit: "Pieces",
-    reorderLevel: 20,
-    lastUpdated: "2023-11-05",
-    brand: "PipeMaster",
-    supplierName: "Quality Chemicals Inc.",
-    status: "out-of-stock",
-  },
-  {
-    id: "6",
-    itemCode: "INV-1006",
-    itemName: "Circuit Breakers",
-    category: "Electrical",
-    inStock: 42,
-    unit: "Pieces",
-    reorderLevel: 15,
-    lastUpdated: "2023-11-03",
-    brand: "ElectricSafe",
-    supplierName: "Global Tech Solutions",
-    status: "in-stock",
-  },
-  {
-    id: "7",
-    itemCode: "INV-1007",
-    itemName: "Bolts and Nuts",
-    category: "Hardware",
-    inStock: 540,
-    unit: "Pieces",
-    reorderLevel: 200,
-    lastUpdated: "2023-11-01",
-    brand: "FastenPro",
-    supplierName: "Precision Parts Ltd.",
-    status: "in-stock",
-  },
-];
-
 export function InventoryManagement() {
   const [activeTab, setActiveTab] = useState("all");
   const navigate = useNavigate();
+  const { mutate: deleteItem, isPending: isDeleting } =
+    useDeleteInventoryItem();
 
   const { control, watch, reset } = useForm<InventoryFiltersValues>({
     resolver: zodResolver(inventoryFiltersSchema),
@@ -174,24 +75,32 @@ export function InventoryManagement() {
 
   const filters = watch();
 
-  const getFilteredItems = () => {
-    let filtered = mockInventoryItems;
+  // Convert activeTab to proper filter params
+  const getStatusFilter = () => {
+    if (activeTab === "low-stock") return { low_stock: true };
+    if (activeTab === "out-of-stock") return { in_stock: false };
+    return {};
+  };
 
-    // Filter by tab
-    if (activeTab === "low-stock") {
-      filtered = filtered.filter((item) => item.status === "low-stock");
-    } else if (activeTab === "out-of-stock") {
-      filtered = filtered.filter((item) => item.status === "out-of-stock");
-    }
+  const {
+    data: inventoryItems = [],
+    isLoading,
+    isError,
+    refetch,
+  } = useInventoryItemsWithStatus(getStatusFilter());
+
+  const getFilteredItems = () => {
+    let filtered = inventoryItems || [];
 
     // Filter by search
     if (filters.searchQuery) {
       filtered = filtered.filter(
         (item) =>
-          item.itemName
+          item.item_name
             .toLowerCase()
             .includes(filters.searchQuery!.toLowerCase()) ||
-          item.itemCode
+          item.item_code
+            .toString()
             .toLowerCase()
             .includes(filters.searchQuery!.toLowerCase())
       );
@@ -204,21 +113,41 @@ export function InventoryManagement() {
       );
     }
 
-    // Filter by brand
-    if (filters.brandFilter) {
+    // Filter by brand (if the API provides brand data)
+    if (filters.brandFilter && "brand" in filtered[0]) {
       filtered = filtered.filter((item) =>
-        item.brand.toLowerCase().includes(filters.brandFilter!.toLowerCase())
+        (item as any).brand
+          ?.toLowerCase()
+          .includes(filters.brandFilter!.toLowerCase())
       );
     }
 
-    // Filter by supplier
-    if (filters.supplierFilter && filters.supplierFilter !== "all") {
+    // Filter by supplier (if the API provides supplier data)
+    if (
+      filters.supplierFilter &&
+      filters.supplierFilter !== "all" &&
+      "supplierName" in filtered[0]
+    ) {
       filtered = filtered.filter(
-        (item) => item.supplierName === filters.supplierFilter
+        (item) => (item as any).supplierName === filters.supplierFilter
       );
     }
 
     return filtered;
+  };
+
+  const handleDeleteItem = (id: number) => {
+    if (confirm("Are you sure you want to delete this item?")) {
+      deleteItem(id, {
+        onSuccess: () => {
+          toast.success("Item deleted successfully");
+          refetch();
+        },
+        onError: (error) => {
+          toast.error(`Failed to delete item: ${error.message}`);
+        },
+      });
+    }
   };
 
   const filteredItems = getFilteredItems();
@@ -243,25 +172,34 @@ export function InventoryManagement() {
     });
   };
 
-  const totalItems = mockInventoryItems.length;
-  const lowStockItems = mockInventoryItems.filter(
-    (item) => item.status === "low-stock"
-  ).length;
-  const outOfStockItems = mockInventoryItems.filter(
-    (item) => item.status === "out-of-stock"
-  ).length;
+  const totalItems = inventoryItems?.length || 0;
+  const lowStockItems =
+    inventoryItems?.filter((item) => item.status === "low-stock").length || 0;
+  const outOfStockItems =
+    inventoryItems?.filter((item) => item.status === "out-of-stock").length ||
+    0;
 
+  // Extract unique categories from API data
   const categories = [
     { value: "all", label: "All Categories" },
-    ...Array.from(new Set(mockInventoryItems.map((item) => item.category))).map(
-      (category) => ({ value: category, label: category })
-    ),
+    ...Array.from(
+      new Set(
+        inventoryItems
+          ?.map((item) => item.category)
+          .filter((category): category is string => !!category) || []
+      )
+    ).map((category) => ({ value: category, label: category })),
   ];
 
+  // Extract unique suppliers if available in data
   const suppliers = [
     { value: "all", label: "All Suppliers" },
     ...Array.from(
-      new Set(mockInventoryItems.map((item) => item.supplierName))
+      new Set(
+        inventoryItems
+          ?.map((item) => (item as any).supplierName)
+          .filter((supplier): supplier is string => !!supplier) || []
+      )
     ).map((supplier) => ({ value: supplier, label: supplier })),
   ];
 
@@ -410,80 +348,113 @@ export function InventoryManagement() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Item Code</TableHead>
-                    <TableHead>Item Name</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Brand</TableHead>
-                    <TableHead>In Stock</TableHead>
-                    <TableHead>Unit</TableHead>
-                    <TableHead>Reorder Level</TableHead>
-                    <TableHead>Supplier</TableHead>
-                    <TableHead>Last Updated</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredItems.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell className="font-medium">
-                        {item.itemCode}
-                      </TableCell>
-                      <TableCell>{item.itemName}</TableCell>
-                      <TableCell>{item.category}</TableCell>
-                      <TableCell>{item.brand}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center">
-                          {getStatusIcon(item.status)}
-                          <span className="ml-2">{item.inStock}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>{item.unit}</TableCell>
-                      <TableCell>{item.reorderLevel}</TableCell>
-                      <TableCell>{item.supplierName}</TableCell>
-                      <TableCell>{item.lastUpdated}</TableCell>
-                      <TableCell>
-                        <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            item.status === "in-stock"
-                              ? "bg-green-100 text-green-800"
-                              : item.status === "low-stock"
-                              ? "bg-yellow-100 text-yellow-800"
-                              : "bg-red-100 text-red-800"
-                          }`}
-                        >
-                          {item.status === "in-stock" && "In Stock"}
-                          {item.status === "low-stock" && "Low Stock"}
-                          {item.status === "out-of-stock" && "Out of Stock"}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <span className="sr-only">Open menu</span>
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
-                              <Eye className="mr-2 h-4 w-4" />
-                              View Details
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Edit className="mr-2 h-4 w-4" />
-                              Edit Item
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
+              {isLoading ? (
+                <div className="flex justify-center items-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  <span className="ml-2">Loading inventory data...</span>
+                </div>
+              ) : isError ? (
+                <div className="flex justify-center items-center py-8 text-red-500">
+                  <XCircle className="h-8 w-8 mr-2" />
+                  <span>Error loading inventory data. Please try again.</span>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Item Code</TableHead>
+                      <TableHead>Item Name</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead>In Stock</TableHead>
+                      <TableHead>Unit</TableHead>
+                      <TableHead>Reorder Level</TableHead>
+                      <TableHead>Project</TableHead>
+                      <TableHead>Last Updated</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredItems.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell className="font-medium">
+                          {item.item_code}
+                        </TableCell>
+                        <TableCell>{item.item_name}</TableCell>
+                        <TableCell>{item.category}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center">
+                            {getStatusIcon(item.status)}
+                            <span className="ml-2">{item.unit}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>Units</TableCell>
+                        <TableCell>{item.reorder_level}</TableCell>
+                        <TableCell>{item.project.name}</TableCell>
+                        <TableCell>{item.last_update}</TableCell>
+                        <TableCell>
+                          <span
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              item.status === "in-stock"
+                                ? "bg-green-100 text-green-800"
+                                : item.status === "low-stock"
+                                ? "bg-yellow-100 text-yellow-800"
+                                : "bg-red-100 text-red-800"
+                            }`}
+                          >
+                            {item.status === "in-stock" && "In Stock"}
+                            {item.status === "low-stock" && "Low Stock"}
+                            {item.status === "out-of-stock" && "Out of Stock"}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="h-8 w-8 p-0">
+                                <span className="sr-only">Open menu</span>
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  navigate(`/inventory/${item.id}`)
+                                }
+                              >
+                                <Eye className="mr-2 h-4 w-4" />
+                                View Details
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  navigate(`/inventory/edit/${item.id}`)
+                                }
+                              >
+                                <Edit className="mr-2 h-4 w-4" />
+                                Edit Item
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleDeleteItem(item.id)}
+                                disabled={isDeleting}
+                                className="text-red-600 focus:text-red-600"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete Item
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {filteredItems.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={10} className="text-center py-8">
+                          No inventory items found
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

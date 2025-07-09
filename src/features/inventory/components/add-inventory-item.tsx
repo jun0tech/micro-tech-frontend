@@ -13,11 +13,14 @@ import { FormInput } from "@/components/ui/form-input";
 import { FormSelect } from "@/components/ui/form-select";
 import { FormTextarea } from "@/components/ui/form-textarea";
 import { Label } from "@/components/ui/label";
+import { useCreateInventoryItem } from "@/services/inventory/useInventory";
+import { useProjects } from "@/services/project/useProject";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Calendar, Upload } from "lucide-react";
+import { Calendar, Loader2, Upload } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router";
+import { toast } from "sonner";
 import { z } from "zod";
 
 const addInventorySchema = z.object({
@@ -64,6 +67,7 @@ const addInventorySchema = z.object({
       "Total price must be a valid number"
     ),
   remarks: z.string().optional(),
+  projectId: z.string().min(1, "Project is required"),
 });
 
 type AddInventoryFormValues = z.infer<typeof addInventorySchema>;
@@ -71,6 +75,9 @@ type AddInventoryFormValues = z.infer<typeof addInventorySchema>;
 export function AddInventoryItem() {
   const [itemType, setItemType] = useState<"fixed" | "current">("fixed");
   const navigate = useNavigate();
+  const { mutate: createInventoryItem, isPending: isCreating } =
+    useCreateInventoryItem();
+  const { data: projects = [], isLoading: isLoadingProjects } = useProjects();
 
   const { control, handleSubmit, watch, setValue } =
     useForm<AddInventoryFormValues>({
@@ -89,13 +96,29 @@ export function AddInventoryItem() {
         vatAmount: "",
         totalPrice: "",
         remarks: "",
+        projectId: "",
       },
     });
 
   const onSubmit = (data: AddInventoryFormValues) => {
-    console.log("Form submitted:", { itemType, ...data });
-    // Add save logic here
-    navigate("/inventory");
+    const inventoryData = {
+      project: Number(data.projectId),
+      item_code: Number(data.invoiceNumber),
+      item_name: data.productName,
+      category: Number(data.category),
+      unit: Number(data.quantity),
+      reorder_level: 10, // Default value, adjust as needed
+    };
+
+    createInventoryItem(inventoryData, {
+      onSuccess: () => {
+        toast.success("Inventory item added successfully");
+        navigate("/inventory");
+      },
+      onError: (error) => {
+        toast.error(`Failed to add inventory item: ${error.message}`);
+      },
+    });
   };
 
   // Watch rate, taxable amount, and VAT to auto-calculate total
@@ -110,6 +133,12 @@ export function AddInventoryItem() {
     const total = taxable + vat;
     setValue("totalPrice", total.toString());
   };
+
+  // Map projects to select options
+  const projectOptions = projects.map((project) => ({
+    value: project.id.toString(),
+    label: project.name,
+  }));
 
   const suppliers = [
     { value: "global-tech", label: "Global Tech Solutions" },
@@ -197,6 +226,20 @@ export function AddInventoryItem() {
             <CardTitle>Item Details</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
+            {/* Project */}
+            <FormSelect
+              id="project"
+              name="projectId"
+              label="Project"
+              options={projectOptions}
+              placeholder={
+                isLoadingProjects ? "Loading projects..." : "Select project"
+              }
+              control={control}
+              required
+              disabled={isLoadingProjects}
+            />
+
             {/* Supplier Name */}
             <FormSelect
               id="supplier"
@@ -380,7 +423,16 @@ export function AddInventoryItem() {
 
         {/* Action Buttons */}
         <div className="flex space-x-4">
-          <Button type="submit">Save Item</Button>
+          <Button type="submit" disabled={isCreating}>
+            {isCreating ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              "Save Item"
+            )}
+          </Button>
           <Button
             type="button"
             variant="outline"
