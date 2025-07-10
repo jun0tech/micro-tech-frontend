@@ -1,7 +1,7 @@
 import { ControlledCheckbox } from "@/components/form/form-checkbox-field";
 import FormInputField from "@/components/form/form-input-field";
 import { Button } from "@/components/ui/button";
-import { GoogleIcon, LogoIcon } from "@/components/ui/icons";
+import { LogoIcon } from "@/components/ui/icons";
 import { useLogin } from "@/services/auth/useAuth";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, Mail } from "lucide-react";
@@ -143,7 +143,7 @@ export default function Login() {
               </div>
             </div>
 
-            <div className="mt-6">
+            {/* <div className="mt-6">
               <button
                 type="button"
                 disabled
@@ -152,7 +152,7 @@ export default function Login() {
                 <GoogleIcon />
                 Sign in with Google
               </button>
-            </div>
+            </div> */}
           </div>
 
           <div className="text-center">
@@ -162,7 +162,7 @@ export default function Login() {
                 href="/register"
                 className="font-medium text-blue-600 hover:text-blue-500"
               >
-                Create an account
+                Register
               </a>
             </p>
           </div>

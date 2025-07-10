@@ -5,7 +5,7 @@ import axios, {
 } from "axios";
 
 // API Configuration
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URI;
 const API_VERSION = "/api/v1";
 
 // Create axios instance with base configuration
@@ -22,7 +22,6 @@ apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     // Get token from localStorage or your preferred storage
     const token = localStorage.getItem("authToken");
-
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }

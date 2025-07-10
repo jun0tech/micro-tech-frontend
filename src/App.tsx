@@ -10,6 +10,7 @@ import PurchaseRequests from "@/pages/purchase/PurchaseRequests";
 import UserProfile from "@/pages/users/UserProfile";
 import { Navigate, Route, Routes } from "react-router";
 import LayoutWrapper from "./components/common/LayoutWrapper";
+import Register from "./pages/(auth)/register";
 import NotificationsPage from "./pages/management/notifications";
 import { useAuthStatus } from "./services";
 
@@ -19,6 +20,7 @@ function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
       {authStatus?.isAuthenticated ? (
         <Route path="/" element={<LayoutWrapper />}>
           <Route index element={<Dashboard />} />

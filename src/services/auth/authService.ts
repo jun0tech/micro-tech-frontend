@@ -13,7 +13,7 @@ export const authService = {
   async login(credentials: LoginRequest): Promise<LoginResponse | undefined> {
     try {
       const response = await apiClient.post<LoginResponse>(
-        "/auth/login",
+        "/user/login/",
         credentials
       );
       const data = handleApiResponse(response);
