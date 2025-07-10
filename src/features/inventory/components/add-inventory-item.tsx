@@ -13,17 +13,21 @@ import { FormInput } from "@/components/ui/form-input";
 import { FormSelect } from "@/components/ui/form-select";
 import { FormTextarea } from "@/components/ui/form-textarea";
 import { Label } from "@/components/ui/label";
-import { useCreateInventoryItem } from "@/services/inventory/useInventory";
+import {
+  useCreateInventoryItem,
+  useInventoryItem,
+  useUpdateInventoryItem,
+} from "@/services/inventory/useInventory";
 import { useProjects } from "@/services/project/useProject";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Calendar, Loader2, Upload } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { useNavigate } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
 import { z } from "zod";
 
-const addInventorySchema = z.object({
+const inventorySchema = z.object({
   supplierName: z.string().min(1, "Please select a supplier"),
   productName: z.string().min(2, "Product name must be at least 2 characters"),
   category: z.string().min(1, "Please select a category"),
@@ -70,18 +74,29 @@ const addInventorySchema = z.object({
   projectId: z.string().min(1, "Project is required"),
 });
 
-type AddInventoryFormValues = z.infer<typeof addInventorySchema>;
+type InventoryFormValues = z.infer<typeof inventorySchema>;
 
 export function AddInventoryItem() {
   const [itemType, setItemType] = useState<"fixed" | "current">("fixed");
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+
+  // Determine if we're in edit mode
+  const isEditMode = !!id;
+  const inventoryId = id ? parseInt(id, 10) : 0;
+
+  // Hooks for different operations
   const { mutate: createInventoryItem, isPending: isCreating } =
     useCreateInventoryItem();
+  const { mutate: updateInventoryItem, isPending: isUpdating } =
+    useUpdateInventoryItem();
+  const { data: inventoryItem, isLoading: isLoadingItem } =
+    useInventoryItem(inventoryId);
   const { data: projects = [], isLoading: isLoadingProjects } = useProjects();
 
-  const { control, handleSubmit, watch, setValue } =
-    useForm<AddInventoryFormValues>({
-      resolver: zodResolver(addInventorySchema),
+  const { control, handleSubmit, watch, setValue, reset } =
+    useForm<InventoryFormValues>({
+      resolver: zodResolver(inventorySchema),
       defaultValues: {
         supplierName: "",
         productName: "",
@@ -100,7 +115,30 @@ export function AddInventoryItem() {
       },
     });
 
-  const onSubmit = (data: AddInventoryFormValues) => {
+  // Populate form when editing and inventory item loads
+  useEffect(() => {
+    if (isEditMode && inventoryItem) {
+      reset({
+        productName: inventoryItem.item_name,
+        quantity: inventoryItem.unit.toString(),
+        invoiceNumber: inventoryItem.item_code.toString(),
+        projectId: inventoryItem.project.id.toString(),
+        category: inventoryItem.category,
+        // Set defaults for fields not in API
+        supplierName: "",
+        brand: "",
+        unit: "pcs",
+        createdDate: inventoryItem.last_update || "",
+        rate: "",
+        taxableAmount: "",
+        vatAmount: "",
+        totalPrice: "",
+        remarks: "",
+      });
+    }
+  }, [isEditMode, inventoryItem, reset]);
+
+  const onSubmit = (data: InventoryFormValues) => {
     const inventoryData = {
       project: Number(data.projectId),
       item_code: Number(data.invoiceNumber),
@@ -110,15 +148,30 @@ export function AddInventoryItem() {
       reorder_level: 10, // Default value, adjust as needed
     };
 
-    createInventoryItem(inventoryData, {
-      onSuccess: () => {
-        toast.success("Inventory item added successfully");
-        navigate("/inventory");
-      },
-      onError: (error) => {
-        toast.error(`Failed to add inventory item: ${error.message}`);
-      },
-    });
+    if (isEditMode) {
+      updateInventoryItem(
+        { id: inventoryId, data: inventoryData },
+        {
+          onSuccess: () => {
+            toast.success("Inventory item updated successfully");
+            navigate("/inventory");
+          },
+          onError: (error) => {
+            toast.error(`Failed to update inventory item: ${error.message}`);
+          },
+        }
+      );
+    } else {
+      createInventoryItem(inventoryData, {
+        onSuccess: () => {
+          toast.success("Inventory item added successfully");
+          navigate("/inventory");
+        },
+        onError: (error) => {
+          toast.error(`Failed to add inventory item: ${error.message}`);
+        },
+      });
+    }
   };
 
   // Watch rate, taxable amount, and VAT to auto-calculate total
@@ -170,6 +223,47 @@ export function AddInventoryItem() {
     { value: "sets", label: "Sets" },
   ];
 
+  // Loading state for edit mode
+  if (isEditMode && isLoadingItem) {
+    return (
+      <div className="flex justify-center items-center py-8">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2">Loading inventory item...</span>
+      </div>
+    );
+  }
+
+  // Item not found in edit mode
+  if (isEditMode && !inventoryItem && !isLoadingItem) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-red-500">Inventory item not found</p>
+        <Button
+          onClick={() => navigate("/inventory")}
+          className="mt-4"
+          variant="outline"
+        >
+          Back to Inventory
+        </Button>
+      </div>
+    );
+  }
+
+  const isLoading = isCreating || isUpdating;
+  const pageTitle = isEditMode
+    ? `Edit Inventory Item${
+        inventoryItem ? `: ${inventoryItem.item_name}` : ""
+      }`
+    : "Add New Inventory Item";
+  const breadcrumbText = isEditMode ? "Edit Item" : "Add Item";
+  const submitButtonText = isEditMode
+    ? isUpdating
+      ? "Updating..."
+      : "Update Item"
+    : isCreating
+    ? "Saving..."
+    : "Save Item";
+
   return (
     <div className="space-y-6 max-w-4xl">
       {/* Breadcrumb */}
@@ -180,13 +274,13 @@ export function AddInventoryItem() {
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>Add Item</BreadcrumbPage>
+            <BreadcrumbPage>{breadcrumbText}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
 
       {/* Header */}
-      <h1 className="text-2xl font-bold">Add New Inventory Item</h1>
+      <h1 className="text-2xl font-bold">{pageTitle}</h1>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* Item Type */}
@@ -423,14 +517,14 @@ export function AddInventoryItem() {
 
         {/* Action Buttons */}
         <div className="flex space-x-4">
-          <Button type="submit" disabled={isCreating}>
-            {isCreating ? (
+          <Button type="submit" disabled={isLoading}>
+            {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Saving...
+                {submitButtonText}
               </>
             ) : (
-              "Save Item"
+              submitButtonText
             )}
           </Button>
           <Button

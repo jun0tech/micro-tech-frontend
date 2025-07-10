@@ -1,4 +1,8 @@
 import {
+  DeleteConfirmationDialog,
+  useDeleteDialog,
+} from "@/components/common/delete-confirmation-dialog";
+import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbList,
@@ -62,6 +66,7 @@ export function InventoryManagement() {
   const navigate = useNavigate();
   const { mutate: deleteItem, isPending: isDeleting } =
     useDeleteInventoryItem();
+  const deleteDialog = useDeleteDialog();
 
   const { control, watch, reset } = useForm<InventoryFiltersValues>({
     resolver: zodResolver(inventoryFiltersSchema),
@@ -136,18 +141,19 @@ export function InventoryManagement() {
     return filtered;
   };
 
-  const handleDeleteItem = (id: number) => {
-    if (confirm("Are you sure you want to delete this item?")) {
-      deleteItem(id, {
-        onSuccess: () => {
-          toast.success("Item deleted successfully");
-          refetch();
-        },
-        onError: (error) => {
-          toast.error(`Failed to delete item: ${error.message}`);
-        },
-      });
-    }
+  const handleDeleteItem = () => {
+    if (!deleteDialog.itemToDelete) return;
+
+    deleteItem(deleteDialog.itemToDelete.id, {
+      onSuccess: () => {
+        toast.success("Inventory item deleted successfully");
+        deleteDialog.closeDialog();
+        refetch();
+      },
+      onError: (error) => {
+        toast.error(`Failed to delete item: ${error.message}`);
+      },
+    });
   };
 
   const filteredItems = getFilteredItems();
@@ -204,261 +210,279 @@ export function InventoryManagement() {
   ];
 
   return (
-    <div className="space-y-6">
-      {/* Breadcrumb */}
-      <Breadcrumb>
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbPage>Inventory</BreadcrumbPage>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>Stock Items</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
+    <>
+      <div className="space-y-6">
+        {/* Breadcrumb */}
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbPage>Inventory</BreadcrumbPage>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>Stock Items</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Inventory Management</h1>
-        <Button onClick={() => navigate("/inventory/new")}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Item
-        </Button>
-      </div>
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold">Inventory Management</h1>
+          <Button onClick={() => navigate("/inventory/new")}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Item
+          </Button>
+        </div>
 
-      {/* Search Filters */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Search & Filters</CardTitle>
-            <Button variant="outline" size="sm" onClick={handleClearFilters}>
-              Clear Filters
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <FormInput
-              name="searchQuery"
-              label="Search"
-              placeholder="Search by product name"
-              control={control}
-              icon={<Search className="h-4 w-4 text-muted-foreground" />}
-            />
-            <FormSelect
-              name="categoryFilter"
-              label="Category"
-              options={categories}
-              placeholder="Select category"
-              control={control}
-            />
-            <FormInput
-              name="brandFilter"
-              label="Brand"
-              placeholder="Enter brand name"
-              control={control}
-            />
-            <FormSelect
-              name="supplierFilter"
-              label="Supplier"
-              options={suppliers}
-              placeholder="Select supplier"
-              control={control}
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {/* Search Filters */}
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <Package className="h-8 w-8 text-blue-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">
-                  Total Items
-                </p>
-                <p className="text-2xl font-bold">{totalItems}</p>
-              </div>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Search & Filters</CardTitle>
+              <Button variant="outline" size="sm" onClick={handleClearFilters}>
+                Clear Filters
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <FormInput
+                name="searchQuery"
+                label="Search"
+                placeholder="Search by product name"
+                control={control}
+                icon={<Search className="h-4 w-4 text-muted-foreground" />}
+              />
+              <FormSelect
+                name="categoryFilter"
+                label="Category"
+                options={categories}
+                placeholder="Select category"
+                control={control}
+              />
+              <FormInput
+                name="brandFilter"
+                label="Brand"
+                placeholder="Enter brand name"
+                control={control}
+              />
+              <FormSelect
+                name="supplierFilter"
+                label="Supplier"
+                options={suppliers}
+                placeholder="Select supplier"
+                control={control}
+              />
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <AlertTriangle className="h-8 w-8 text-yellow-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">
-                  Low Stock
-                </p>
-                <p className="text-2xl font-bold">{lowStockItems}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <XCircle className="h-8 w-8 text-red-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">
-                  Out of Stock
-                </p>
-                <p className="text-2xl font-bold">{outOfStockItems}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <Clock className="h-8 w-8 text-green-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">
-                  Recent Activity
-                </p>
-                <p className="text-2xl font-bold">12</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
 
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="all">All Items ({totalItems})</TabsTrigger>
-          <TabsTrigger value="low-stock">
-            Low Stock ({lowStockItems})
-          </TabsTrigger>
-          <TabsTrigger value="out-of-stock">
-            Out of Stock ({outOfStockItems})
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value={activeTab}>
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
-            <CardHeader>
-              <CardTitle>
-                {activeTab === "all" && "All Inventory Items"}
-                {activeTab === "low-stock" && "Low Stock Items"}
-                {activeTab === "out-of-stock" && "Out of Stock Items"}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="flex justify-center items-center py-8">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                  <span className="ml-2">Loading inventory data...</span>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <Package className="h-8 w-8 text-blue-600" />
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Total Items
+                  </p>
+                  <p className="text-2xl font-bold">{totalItems}</p>
                 </div>
-              ) : isError ? (
-                <div className="flex justify-center items-center py-8 text-red-500">
-                  <XCircle className="h-8 w-8 mr-2" />
-                  <span>Error loading inventory data. Please try again.</span>
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Item Code</TableHead>
-                      <TableHead>Item Name</TableHead>
-                      <TableHead>Category</TableHead>
-                      <TableHead>In Stock</TableHead>
-                      <TableHead>Unit</TableHead>
-                      <TableHead>Reorder Level</TableHead>
-                      <TableHead>Project</TableHead>
-                      <TableHead>Last Updated</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredItems.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell className="font-medium">
-                          {item.item_code}
-                        </TableCell>
-                        <TableCell>{item.item_name}</TableCell>
-                        <TableCell>{item.category}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center">
-                            {getStatusIcon(item.status)}
-                            <span className="ml-2">{item.unit}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>Units</TableCell>
-                        <TableCell>{item.reorder_level}</TableCell>
-                        <TableCell>{item.project.name}</TableCell>
-                        <TableCell>{item.last_update}</TableCell>
-                        <TableCell>
-                          <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              item.status === "in-stock"
-                                ? "bg-green-100 text-green-800"
-                                : item.status === "low-stock"
-                                ? "bg-yellow-100 text-yellow-800"
-                                : "bg-red-100 text-red-800"
-                            }`}
-                          >
-                            {item.status === "in-stock" && "In Stock"}
-                            {item.status === "low-stock" && "Low Stock"}
-                            {item.status === "out-of-stock" && "Out of Stock"}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" className="h-8 w-8 p-0">
-                                <span className="sr-only">Open menu</span>
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onClick={() =>
-                                  navigate(`/inventory/${item.id}`)
-                                }
-                              >
-                                <Eye className="mr-2 h-4 w-4" />
-                                View Details
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() =>
-                                  navigate(`/inventory/edit/${item.id}`)
-                                }
-                              >
-                                <Edit className="mr-2 h-4 w-4" />
-                                Edit Item
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => handleDeleteItem(item.id)}
-                                disabled={isDeleting}
-                                className="text-red-600 focus:text-red-600"
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Delete Item
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {filteredItems.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={10} className="text-center py-8">
-                          No inventory items found
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              )}
+              </div>
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
-    </div>
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <AlertTriangle className="h-8 w-8 text-yellow-600" />
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Low Stock
+                  </p>
+                  <p className="text-2xl font-bold">{lowStockItems}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <XCircle className="h-8 w-8 text-red-600" />
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Out of Stock
+                  </p>
+                  <p className="text-2xl font-bold">{outOfStockItems}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <Clock className="h-8 w-8 text-green-600" />
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Recent Activity
+                  </p>
+                  <p className="text-2xl font-bold">12</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList>
+            <TabsTrigger value="all">All Items ({totalItems})</TabsTrigger>
+            <TabsTrigger value="low-stock">
+              Low Stock ({lowStockItems})
+            </TabsTrigger>
+            <TabsTrigger value="out-of-stock">
+              Out of Stock ({outOfStockItems})
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value={activeTab}>
+            <Card>
+              <CardHeader>
+                <CardTitle>
+                  {activeTab === "all" && "All Inventory Items"}
+                  {activeTab === "low-stock" && "Low Stock Items"}
+                  {activeTab === "out-of-stock" && "Out of Stock Items"}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="flex justify-center items-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <span className="ml-2">Loading inventory data...</span>
+                  </div>
+                ) : isError ? (
+                  <div className="flex justify-center items-center py-8 text-red-500">
+                    <XCircle className="h-8 w-8 mr-2" />
+                    <span>Error loading inventory data. Please try again.</span>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Item Code</TableHead>
+                        <TableHead>Item Name</TableHead>
+                        <TableHead>Category</TableHead>
+                        <TableHead>In Stock</TableHead>
+                        <TableHead>Unit</TableHead>
+                        <TableHead>Reorder Level</TableHead>
+                        <TableHead>Project</TableHead>
+                        <TableHead>Last Updated</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredItems.map((item) => (
+                        <TableRow key={item.id}>
+                          <TableCell className="font-medium">
+                            {item.item_code}
+                          </TableCell>
+                          <TableCell>{item.item_name}</TableCell>
+                          <TableCell>{item.category}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center">
+                              {getStatusIcon(item.status)}
+                              <span className="ml-2">{item.unit}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>Units</TableCell>
+                          <TableCell>{item.reorder_level}</TableCell>
+                          <TableCell>{item.project.name}</TableCell>
+                          <TableCell>{item.last_update}</TableCell>
+                          <TableCell>
+                            <span
+                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                item.status === "in-stock"
+                                  ? "bg-green-100 text-green-800"
+                                  : item.status === "low-stock"
+                                  ? "bg-yellow-100 text-yellow-800"
+                                  : "bg-red-100 text-red-800"
+                              }`}
+                            >
+                              {item.status === "in-stock" && "In Stock"}
+                              {item.status === "low-stock" && "Low Stock"}
+                              {item.status === "out-of-stock" && "Out of Stock"}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                  <span className="sr-only">Open menu</span>
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    navigate(`/inventory/${item.id}`)
+                                  }
+                                >
+                                  <Eye className="mr-2 h-4 w-4" />
+                                  View Details
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    navigate(`/inventory/edit/${item.id}`)
+                                  }
+                                >
+                                  <Edit className="mr-2 h-4 w-4" />
+                                  Edit Item
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    deleteDialog.openDialog(
+                                      item.id,
+                                      item.item_name
+                                    )
+                                  }
+                                  disabled={isDeleting}
+                                  className="text-red-600 focus:text-red-600"
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Delete Item
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {filteredItems.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={10} className="text-center py-8">
+                            No inventory items found
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmationDialog
+        isOpen={deleteDialog.isOpen}
+        onClose={deleteDialog.closeDialog}
+        onConfirm={handleDeleteItem}
+        title="Delete Inventory Item"
+        itemName={deleteDialog.itemToDelete?.name}
+        itemType="inventory item"
+        isLoading={isDeleting}
+      />
+    </>
   );
 }
