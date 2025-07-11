@@ -1,4 +1,5 @@
 import { apiClient, handleApiError, handleApiResponse } from "../api/apiClient";
+import { API_ROUTES } from "../api/apiRoutes";
 import type {
   LoginRequest,
   LoginResponse,
@@ -13,7 +14,7 @@ export const authService = {
   async login(credentials: LoginRequest): Promise<LoginResponse | undefined> {
     try {
       const response = await apiClient.post<LoginResponse>(
-        "/user/login/",
+        API_ROUTES.login,
         credentials
       );
       const data = handleApiResponse(response);
@@ -42,7 +43,7 @@ export const authService = {
   ): Promise<LoginResponse | undefined> {
     try {
       const response = await apiClient.post<LoginResponse>(
-        "/auth/register",
+        API_ROUTES.register,
         userData
       );
       const data = handleApiResponse(response);
@@ -68,7 +69,7 @@ export const authService = {
   async logout(): Promise<void> {
     try {
       // Call logout endpoint to invalidate token on server
-      await apiClient.post("/auth/logout");
+      await apiClient.post(API_ROUTES.logout);
     } catch (error) {
       // Even if server logout fails, still clear local storage
       console.warn("Server logout failed:", error);
@@ -81,7 +82,7 @@ export const authService = {
   // Refresh token
   async refreshToken(refreshToken: string): Promise<LoginResponse | undefined> {
     try {
-      const response = await apiClient.post<LoginResponse>("/auth/refresh", {
+      const response = await apiClient.post<LoginResponse>(API_ROUTES.refresh, {
         refreshToken,
       } as RefreshTokenRequest);
       const data = handleApiResponse(response);
@@ -107,7 +108,7 @@ export const authService = {
   // Get current user profile
   async getCurrentUser(): Promise<User | undefined> {
     try {
-      const response = await apiClient.get<User>("/auth/me");
+      const response = await apiClient.get<User>(API_ROUTES.me);
       return handleApiResponse(response);
     } catch (error) {
       return handleApiError(error);
@@ -117,7 +118,7 @@ export const authService = {
   // Update user profile
   async updateProfile(userData: Partial<User>): Promise<User | undefined> {
     try {
-      const response = await apiClient.put<User>("/auth/profile", userData);
+      const response = await apiClient.put<User>(API_ROUTES.profile, userData);
       const data = handleApiResponse(response);
 
       // Update stored user data
@@ -135,7 +136,7 @@ export const authService = {
     newPassword: string
   ): Promise<void> {
     try {
-      await apiClient.post("/auth/change-password", {
+      await apiClient.post(API_ROUTES.changePassword, {
         currentPassword,
         newPassword,
       });
@@ -147,7 +148,7 @@ export const authService = {
   // Forgot password
   async forgotPassword(email: string): Promise<void> {
     try {
-      await apiClient.post("/auth/forgot-password", { email });
+      await apiClient.post(API_ROUTES.forgotPassword, { email });
     } catch (error) {
       return handleApiError(error);
     }
@@ -156,7 +157,7 @@ export const authService = {
   // Reset password
   async resetPassword(token: string, newPassword: string): Promise<void> {
     try {
-      await apiClient.post("/auth/reset-password", {
+      await apiClient.post(API_ROUTES.resetPassword, {
         token,
         newPassword,
       });

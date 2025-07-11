@@ -1,34 +1,37 @@
 import { Button } from "@/components/ui/button";
 import { FormInput } from "@/components/ui/form-input";
-import { FormSelect } from "@/components/ui/form-select";
+import { useRegister } from "@/services/auth/useAuth";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, Mail, User2 } from "lucide-react";
 import React from "react";
 import { useForm } from "react-hook-form";
+import { useNavigate } from "react-router";
+import { toast } from "sonner";
 import { z } from "zod";
 
-const departments = [
-  { value: "mechanical", label: "Mechanical" },
-  { value: "electrical", label: "Electrical" },
-  { value: "plumbing", label: "Plumbing" },
-  { value: "hr", label: "HR" },
-  { value: "management", label: "Management" },
-  { value: "procurement", label: "Procurement" },
-];
+// const departments = [
+//   { value: "mechanical", label: "Mechanical" },
+//   { value: "electrical", label: "Electrical" },
+//   { value: "plumbing", label: "Plumbing" },
+//   { value: "hr", label: "HR" },
+//   { value: "management", label: "Management" },
+//   { value: "procurement", label: "Procurement" },
+// ];
 
 const registerSchema = z
   .object({
-    name: z.string().min(2, "Name must be at least 2 characters"),
+    first_name: z.string().min(2, "First name must be at least 2 characters"),
+    last_name: z.string().min(2, "Last name must be at least 2 characters"),
     email: z.string().email("Please enter a valid email address"),
-    department: z.string().min(1, "Please select a department"),
+    // department: z.string().min(1, "Please select a department"),
     password: z.string().min(6, "Password must be at least 6 characters"),
-    confirmPassword: z
+    confirm_password: z
       .string()
       .min(6, "Confirm password must be at least 6 characters"),
   })
-  .refine((data) => data.password === data.confirmPassword, {
+  .refine((data) => data.password === data.confirm_password, {
     message: "Passwords do not match",
-    path: ["confirmPassword"],
+    path: ["confirm_password"],
   });
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
@@ -37,25 +40,44 @@ export default function Register() {
   const [showPassword, setShowPassword] = React.useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
   const [termsAccepted, setTermsAccepted] = React.useState(false);
+  const navigate = useNavigate();
+  const { mutateAsync: register, isError, error, isPending } = useRegister();
 
   const { control, handleSubmit } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
-      name: "",
+      first_name: "",
+      last_name: "",
       email: "",
-      department: "",
+      // department: "",
       password: "",
-      confirmPassword: "",
+      confirm_password: "",
     },
   });
 
-  const onSubmit = (data: RegisterFormValues) => {
-    console.log(data);
+  const onSubmit = async (data: RegisterFormValues) => {
     if (!termsAccepted) {
       alert("Please accept the terms and conditions");
       return;
     }
-    // Handle registration logic here
+    try {
+      // Only send fields required by RegisterRequest
+      const { first_name, last_name, email, password, confirm_password } = data;
+      await register({
+        first_name,
+        last_name,
+        email,
+        password,
+        confirm_password,
+      });
+      toast.success("Registration request sent successfully", {
+        description: "Redirecting to login page...",
+      });
+      navigate("/login");
+    } catch (err) {
+      // Error is handled by isError and error
+      console.error("Registration failed:", err);
+    }
   };
 
   const togglePasswordVisibility = () => {
@@ -102,11 +124,24 @@ export default function Register() {
         <div className="bg-white/80 backdrop-blur-md rounded-lg border border-gray-200/50 p-8 shadow-sm">
           <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
             <FormInput
-              id="name"
-              name="name"
+              id="first_name"
+              name="first_name"
               type="text"
-              label="Full Name"
-              autoComplete="name"
+              label="First Name"
+              autoComplete="given-name"
+              required
+              control={control}
+              icon={
+                <User2 className="h-5 w-5 text-gray-400" aria-hidden="true" />
+              }
+            />
+
+            <FormInput
+              id="last_name"
+              name="last_name"
+              type="text"
+              label="Last Name"
+              autoComplete="family-name"
               required
               control={control}
               icon={
@@ -128,7 +163,7 @@ export default function Register() {
               }
             />
 
-            <FormSelect
+            {/* <FormSelect
               id="department"
               name="department"
               label="Department"
@@ -137,7 +172,7 @@ export default function Register() {
               required
               control={control}
               helperText="Select the department you work in"
-            />
+            /> */}
 
             <FormInput
               id="password"
@@ -153,6 +188,7 @@ export default function Register() {
                   type="button"
                   onClick={togglePasswordVisibility}
                   className="text-gray-400 hover:text-gray-500"
+                  tabIndex={-1}
                 >
                   {showPassword ? (
                     <EyeOff className="h-5 w-5" />
@@ -164,8 +200,8 @@ export default function Register() {
             />
 
             <FormInput
-              id="confirmPassword"
-              name="confirmPassword"
+              id="confirm_password"
+              name="confirm_password"
               type={showConfirmPassword ? "text" : "password"}
               label="Confirm Password"
               autoComplete="new-password"
@@ -176,6 +212,7 @@ export default function Register() {
                   type="button"
                   onClick={toggleConfirmPasswordVisibility}
                   className="text-gray-400 hover:text-gray-500"
+                  tabIndex={-1}
                 >
                   {showConfirmPassword ? (
                     <EyeOff className="h-5 w-5" />
@@ -220,6 +257,14 @@ export default function Register() {
               </div>
             </div>
 
+            {isError && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-red-600 text-sm">
+                  {error?.message || "Registration failed. Please try again."}
+                </p>
+              </div>
+            )}
+
             <div className="pt-2">
               <Button
                 type="submit"
@@ -228,9 +273,9 @@ export default function Register() {
                     ? "bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-sm"
                     : "bg-gray-200 text-gray-500 cursor-not-allowed"
                 }`}
-                disabled={!termsAccepted}
+                disabled={!termsAccepted || isPending}
               >
-                Submit Registration Request
+                {isPending ? "Registering..." : "Submit Registration Request"}
               </Button>
             </div>
           </form>

@@ -1,4 +1,5 @@
 import { apiClient, handleApiError, handleApiResponse } from "../api/apiClient";
+import { API_ROUTES } from "../api/apiRoutes";
 import type {
   CreateInventoryItemRequest,
   DeleteResponse,
@@ -14,7 +15,9 @@ export const inventoryService = {
     params?: InventoryListParams
   ): Promise<InventoryItem[]> => {
     try {
-      const response = await apiClient.get("/inventory", { params });
+      const response = await apiClient.get(API_ROUTES.inventoryList, {
+        params,
+      });
       return handleApiResponse(response);
     } catch (error) {
       return handleApiError(error);
@@ -24,7 +27,9 @@ export const inventoryService = {
   // GET /api/v1/inventory/{id} - Get single inventory item (if needed)
   getInventoryItem: async (id: number): Promise<InventoryItem> => {
     try {
-      const response = await apiClient.get(`/inventory/${id}`);
+      const response = await apiClient.get(
+        `${API_ROUTES.inventoryDetail}${id}/`
+      );
       return handleApiResponse(response);
     } catch (error) {
       return handleApiError(error);
@@ -36,7 +41,7 @@ export const inventoryService = {
     data: CreateInventoryItemRequest
   ): Promise<InventoryItem[]> => {
     try {
-      const response = await apiClient.post("/inventory/create", data);
+      const response = await apiClient.post(API_ROUTES.inventoryCreate, data);
       return handleApiResponse(response);
     } catch (error) {
       return handleApiError(error);
@@ -49,7 +54,10 @@ export const inventoryService = {
     data: UpdateInventoryItemRequest
   ): Promise<InventoryItem[]> => {
     try {
-      const response = await apiClient.put(`/inventory/edit/${id}`, data);
+      const response = await apiClient.put(
+        `${API_ROUTES.inventoryEdit}${id}/`,
+        data
+      );
       return handleApiResponse(response);
     } catch (error) {
       return handleApiError(error);
@@ -59,7 +67,9 @@ export const inventoryService = {
   // DELETE /api/v1/inventory/delete/{id} - Delete inventory item
   deleteInventoryItem: async (id: number): Promise<DeleteResponse> => {
     try {
-      const response = await apiClient.delete(`/inventory/delete/${id}`);
+      const response = await apiClient.delete(
+        `${API_ROUTES.inventoryDelete}${id}/`
+      );
       return handleApiResponse(response);
     } catch (error) {
       return handleApiError(error);

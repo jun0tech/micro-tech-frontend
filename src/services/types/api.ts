@@ -44,8 +44,9 @@ export interface User {
 export interface RegisterRequest {
   email: string;
   password: string;
-  name?: string;
-  confirmPassword?: string;
+  first_name: string;
+  last_name: string;
+  confirm_password: string;
 }
 
 export interface RefreshTokenRequest {
