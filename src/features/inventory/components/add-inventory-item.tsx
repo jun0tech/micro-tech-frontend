@@ -139,12 +139,28 @@ export function AddInventoryItem() {
   }, [isEditMode, inventoryItem, reset]);
 
   const onSubmit = (data: InventoryFormValues) => {
+    // Find the selected project to get its description
+    const selectedProject = projects.find(
+      (p) => p.id.toString() === data.projectId
+    );
+
     const inventoryData = {
-      project: Number(data.projectId),
-      item_code: Number(data.invoiceNumber),
+      project: {
+        name: selectedProject?.name || "",
+        description: selectedProject?.description || "",
+      },
+      category: {
+        brand: {
+          name: data.brand,
+        },
+        name: data.category,
+      },
+      unit: {
+        name: data.unit,
+      },
+      item_code: data.invoiceNumber,
       item_name: data.productName,
-      category: Number(data.category),
-      unit: Number(data.quantity),
+      in_stock: Number(data.quantity),
       reorder_level: 10, // Default value, adjust as needed
     };
 

@@ -1,5 +1,3 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -18,264 +16,204 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { usePurchaseOrder } from "@/services/purchase/usePurchase";
 import {
+  ArrowLeft,
   Building,
   Calendar,
-  Check,
-  Clock,
-  DollarSign,
-  Edit,
-  FileText,
+  CheckCircle,
   Mail,
   MapPin,
   Phone,
-  Printer,
-  X,
 } from "lucide-react";
 import { Link, useParams } from "react-router";
-
-interface OrderItem {
-  id: number;
-  name: string;
-  size: string;
-  sku: string;
-  quantity: number;
-  unitPrice: number;
-  total: number;
-  notes?: string;
-}
-
-interface ApprovalHistoryItem {
-  id: string;
-  user: string;
-  action: string;
-  date: string;
-  role: string;
-  avatar?: string;
-}
 
 export default function PurchaseOrderDetails() {
   const { id } = useParams<{ id: string }>();
 
-  // Mock data for the purchase order
-  const orderData = {
-    id: id || "PO-2023-001",
-    createdDate: "15 Jun 2023",
-    project: "Hyatt Regency",
-    status: "Pending Approval",
-    totalAmount: "$2,775.62",
-    supplier: {
-      name: "ABC Hardware Suppliers",
-      contact: "John Doe (Sales Manager)",
-      phone: "+1 (555) 123-4567",
-      email: "john.doe@abchardware.com",
-    },
-    delivery: {
-      address: "Hyatt Regency Construction Site",
-      expectedDate: "26 Jun 2023",
-    },
-    notes:
-      "Please ensure all items are delivered together. The GT Bar Saddle is needed urgently for ongoing work.",
-    items: [
-      {
-        id: 1,
-        name: "GT Bar Saddle",
-        size: "28 mm",
-        sku: "BOQ-1234",
-        quantity: 58,
-        unitPrice: 12.5,
-        total: 625.0,
-        notes: "Urgent",
-      },
-      {
-        id: 2,
-        name: "Hexagonal lock nut",
-        size: "Standard",
-        sku: "BOQ-1235",
-        quantity: 260,
-        unitPrice: 2.75,
-        total: 550.0,
-      },
-      {
-        id: 3,
-        name: "Zinc66 cast coupling",
-        size: "Medium",
-        sku: "BOQ-1236",
-        quantity: 35,
-        unitPrice: 18.6,
-        total: 630.0,
-      },
-      {
-        id: 4,
-        name: "GT Rigid conduit pipe",
-        size: "10 mm",
-        sku: "BOQ-1237",
-        quantity: 308,
-        unitPrice: 27.75,
-        total: 970.62,
-      },
-    ] as OrderItem[],
-    approvalHistory: [
-      {
-        id: "1",
-        user: "John Smith",
-        action: "Created by John Smith",
-        date: "15 Jun 2023 at 10:30 AM",
-        role: "Procurement Manager",
-        avatar: "/placeholder-avatar.jpg",
-      },
-      {
-        id: "2",
-        user: "Sarah Johnson",
-        action: "Pending approval from Sarah Johnson",
-        date: "15 Jun 2023 at 2:45 PM",
-        role: "Finance Director",
-        avatar: "/placeholder-avatar.jpg",
-      },
-    ] as ApprovalHistoryItem[],
+  const { data: orderData, isLoading, error } = usePurchaseOrder(id || "");
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6 max-w-7xl mx-auto">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+          <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-48 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !orderData) {
+    return (
+      <div className="space-y-6 max-w-7xl mx-auto">
+        <div className="text-center text-red-600">
+          <p>Error loading purchase order details. Please try again.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Format date to display
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
   };
 
+  // Get status badge color
   const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
+    switch (status) {
       case "approved":
         return "bg-green-100 text-green-800";
-      case "pending approval":
+      case "pending":
         return "bg-yellow-100 text-yellow-800";
       case "rejected":
         return "bg-red-100 text-red-800";
+      case "delivered":
+        return "bg-blue-100 text-blue-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
   };
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto">
+    <div className="space-y-6 max-w-7xl mx-auto">
       {/* Breadcrumb */}
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
-            <BreadcrumbLink href="/purchase">Purchase Requests</BreadcrumbLink>
+            <BreadcrumbLink href="/purchase">Purchase Orders</BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbLink href={`/purchase/order/${id}/details`}>
-              {orderData.id}
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>Details</BreadcrumbPage>
+            <BreadcrumbPage>{orderData.po_number}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
 
       {/* Header */}
-      <h1 className="text-2xl font-bold">Purchase Order: {orderData.id}</h1>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Link to="/purchase">
+            <Button variant="outline" size="icon">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-2xl font-bold">Purchase Order Details</h1>
+            <p className="text-gray-600">
+              Order {orderData.po_number} • Created{" "}
+              {formatDate(orderData.created_at)}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <span
+            className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
+              orderData.status
+            )}`}
+          >
+            {orderData.status.charAt(0).toUpperCase() +
+              orderData.status.slice(1)}
+          </span>
+          <Button variant="outline">Edit Order</Button>
+          <Button>Approve Order</Button>
+        </div>
+      </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {/* Order Information */}
-        <Card className="bg-blue-50">
+      {/* Overview Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-blue-600" />
-              Order Information
-            </CardTitle>
+            <CardTitle className="text-lg">Order Summary</CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-xs text-gray-600">Created on</p>
-            <p className="font-semibold">{orderData.createdDate}</p>
+          <CardContent className="space-y-3">
+            <div className="flex justify-between">
+              <span className="text-gray-600">Order Date:</span>
+              <span className="font-medium">
+                {formatDate(orderData.order_date)}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Expected Delivery:</span>
+              <span className="font-medium">
+                {formatDate(orderData.expected_delivery_date)}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Payment Terms:</span>
+              <span className="font-medium">
+                {orderData.payment_terms.toUpperCase()}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Department:</span>
+              <span className="font-medium">
+                {orderData.department.charAt(0).toUpperCase() +
+                  orderData.department.slice(1)}
+              </span>
+            </div>
+            <div className="flex justify-between border-t pt-3">
+              <span className="text-gray-600">Total Amount:</span>
+              <span className="font-bold text-lg">
+                ${orderData.total_amount.toLocaleString()}
+              </span>
+            </div>
           </CardContent>
         </Card>
 
-        {/* Project */}
-        <Card className="bg-purple-50">
+        <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Building className="h-4 w-4 text-purple-600" />
-              Project
-            </CardTitle>
+            <CardTitle className="text-lg">Project Information</CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="font-semibold">{orderData.project}</p>
+          <CardContent className="space-y-3">
+            <div>
+              <p className="font-medium">{orderData.project.name}</p>
+              <p className="text-sm text-gray-600">Project</p>
+            </div>
+            <div>
+              <p className="font-medium">{orderData.requested_by}</p>
+              <p className="text-sm text-gray-600">Requested By</p>
+            </div>
+            <div>
+              <p className="font-medium">
+                {orderData.priority.charAt(0).toUpperCase() +
+                  orderData.priority.slice(1)}
+              </p>
+              <p className="text-sm text-gray-600">Priority</p>
+            </div>
           </CardContent>
         </Card>
 
-        {/* Status */}
-        <Card className="bg-yellow-50">
+        <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Clock className="h-4 w-4 text-yellow-600" />
-              Status
-            </CardTitle>
+            <CardTitle className="text-lg">Quick Actions</CardTitle>
           </CardHeader>
-          <CardContent>
-            <Badge className={getStatusColor(orderData.status)}>
-              {orderData.status}
-            </Badge>
-          </CardContent>
-        </Card>
-
-        {/* Total Amount */}
-        <Card className="bg-green-50">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <DollarSign className="h-4 w-4 text-green-600" />
-              Total Amount
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="font-bold text-lg">{orderData.totalAmount}</p>
+          <CardContent className="space-y-3">
+            <Button variant="outline" className="w-full justify-start">
+              <CheckCircle className="h-4 w-4 mr-2" />
+              Mark as Delivered
+            </Button>
+            <Button variant="outline" className="w-full justify-start">
+              <Calendar className="h-4 w-4 mr-2" />
+              Update Delivery Date
+            </Button>
+            <Button variant="outline" className="w-full justify-start">
+              <Mail className="h-4 w-4 mr-2" />
+              Contact Supplier
+            </Button>
           </CardContent>
         </Card>
       </div>
-
-      {/* Order Items */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Order Items</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-12">#</TableHead>
-                <TableHead>Item</TableHead>
-                <TableHead>Size</TableHead>
-                <TableHead>SKU</TableHead>
-                <TableHead>Quantity</TableHead>
-                <TableHead>Unit Price</TableHead>
-                <TableHead>Total</TableHead>
-                <TableHead>Notes</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {orderData.items.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell className="font-medium">{item.id}</TableCell>
-                  <TableCell>{item.name}</TableCell>
-                  <TableCell>{item.size}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{item.sku}</Badge>
-                  </TableCell>
-                  <TableCell>{item.quantity} units</TableCell>
-                  <TableCell>${item.unitPrice.toFixed(2)}</TableCell>
-                  <TableCell className="font-medium">
-                    ${item.total.toFixed(2)}
-                  </TableCell>
-                  <TableCell>
-                    {item.notes && (
-                      <Badge variant="destructive" className="text-xs">
-                        {item.notes}
-                      </Badge>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Supplier Information */}
@@ -290,7 +228,7 @@ export default function PurchaseOrderDetails() {
             <div>
               <p className="font-medium">{orderData.supplier.name}</p>
               <p className="text-sm text-gray-600">
-                Contact: {orderData.supplier.contact}
+                Contact: {orderData.supplier.contact_person}
               </p>
             </div>
             <div className="flex items-center gap-2 text-sm">
@@ -315,84 +253,90 @@ export default function PurchaseOrderDetails() {
           <CardContent className="space-y-3">
             <div>
               <p className="text-sm text-gray-600">Delivery Address</p>
-              <p className="font-medium">{orderData.delivery.address}</p>
+              <p className="font-medium">{orderData.delivery_address}</p>
             </div>
             <div>
               <p className="text-sm text-gray-600">Expected Delivery</p>
-              <p className="font-medium">{orderData.delivery.expectedDate}</p>
+              <p className="font-medium">
+                {formatDate(orderData.expected_delivery_date)}
+              </p>
             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Additional Notes */}
+      {orderData.notes && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Additional Notes</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-700">{orderData.notes}</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Order Items */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5 text-purple-600" />
-            Additional Notes
-          </CardTitle>
+          <CardTitle>Order Items</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-gray-700 bg-gray-50 p-4 rounded-md">
-            {orderData.notes}
-          </p>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Item</TableHead>
+                <TableHead>Description</TableHead>
+                <TableHead>SKU</TableHead>
+                <TableHead className="text-right">Quantity</TableHead>
+                <TableHead className="text-right">Unit Price</TableHead>
+                <TableHead className="text-right">Total</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {orderData.items.map((item) => (
+                <TableRow key={item.id}>
+                  <TableCell className="font-medium">
+                    <div>
+                      <p>{item.item_name}</p>
+                      {item.size && (
+                        <p className="text-sm text-gray-500">
+                          Size: {item.size}
+                        </p>
+                      )}
+                      {item.notes && (
+                        <p className="text-sm text-orange-600">{item.notes}</p>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-gray-600">
+                    {item.description}
+                  </TableCell>
+                  <TableCell className="text-gray-600">
+                    {item.sku || "-"}
+                  </TableCell>
+                  <TableCell className="text-right">{item.quantity}</TableCell>
+                  <TableCell className="text-right">
+                    ${item.unit_price.toFixed(2)}
+                  </TableCell>
+                  <TableCell className="text-right font-medium">
+                    ${item.total.toFixed(2)}
+                  </TableCell>
+                </TableRow>
+              ))}
+              <TableRow className="border-t-2">
+                <TableCell colSpan={5} className="text-right font-medium">
+                  Total Amount:
+                </TableCell>
+                <TableCell className="text-right font-bold text-lg">
+                  ${orderData.total_amount.toFixed(2)}
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
-
-      {/* Approval History */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5 text-orange-600" />
-            Approval History
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {orderData.approvalHistory.map((item) => (
-              <div key={item.id} className="flex items-start gap-3">
-                <Avatar className="h-10 w-10">
-                  <AvatarImage src={item.avatar} alt={item.user} />
-                  <AvatarFallback>
-                    {item.user
-                      .split(" ")
-                      .map((n) => n[0])
-                      .join("")}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <p className="text-sm font-medium">{item.action}</p>
-                  <p className="text-xs text-gray-500">{item.role}</p>
-                  <p className="text-xs text-gray-500 mt-1">{item.date}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Action Buttons */}
-      <div className="flex flex-wrap gap-3 justify-end">
-        <Button variant="outline" asChild>
-          <Link to={`/purchase/order/${id}/add-item`}>
-            <Edit className="h-4 w-4 mr-2" />
-            Edit Order
-          </Link>
-        </Button>
-        <Button className="bg-green-600 hover:bg-green-700">
-          <Check className="h-4 w-4 mr-2" />
-          Approve
-        </Button>
-        <Button variant="destructive">
-          <X className="h-4 w-4 mr-2" />
-          Reject
-        </Button>
-        <Button variant="outline">
-          <Printer className="h-4 w-4 mr-2" />
-          Print
-        </Button>
-      </div>
     </div>
   );
 }

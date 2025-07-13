@@ -70,20 +70,42 @@ export interface InventoryItem {
 }
 
 export interface CreateInventoryItemRequest {
-  project: number;
-  item_code: number;
+  project: {
+    name: string;
+    description: string;
+  };
+  category: {
+    brand: {
+      name: string;
+    };
+    name: string;
+  };
+  unit: {
+    name: string;
+  };
+  item_code: string;
   item_name: string;
-  category: number;
-  unit: number;
+  in_stock: number;
   reorder_level: number;
 }
 
 export interface UpdateInventoryItemRequest {
-  project?: number;
-  item_code?: number;
+  project?: {
+    name?: string;
+    description?: string;
+  };
+  category?: {
+    brand?: {
+      name?: string;
+    };
+    name?: string;
+  };
+  unit?: {
+    name?: string;
+  };
+  item_code?: string;
   item_name?: string;
-  category?: number;
-  unit?: number;
+  in_stock?: number;
   reorder_level?: number;
 }
 

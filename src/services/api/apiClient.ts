@@ -45,13 +45,14 @@ apiClient.interceptors.response.use(
 
       switch (status) {
         case 401:
-          break;
           // Unauthorized - clear token and redirect to login
           localStorage.removeItem("authToken");
           localStorage.removeItem("user");
-          // You might want to trigger a redirect to login here
-          // or emit an event that your auth context can listen to
-          window.location.href = "/login";
+          localStorage.removeItem("tokenExpiry");
+          // Redirect to login page
+          if (window.location.pathname !== "/login") {
+            window.location.href = "/login";
+          }
           break;
         case 403:
           // Forbidden
@@ -66,6 +67,10 @@ apiClient.interceptors.response.use(
           break;
         case 500:
           console.error("Internal server error");
+          // Redirect to error page for server errors
+          if (window.location.pathname !== "/error") {
+            window.location.href = "/error";
+          }
           break;
         default:
           console.error("API Error:", error.response.data);
@@ -73,6 +78,7 @@ apiClient.interceptors.response.use(
     } else if (error.request) {
       // Network error
       console.error("Network error - no response received");
+      // You might want to show a network error message
     } else {
       console.error("Request setup error:", error.message);
     }

@@ -7,95 +7,36 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ROUTES } from "@/constants/routes";
+import { usePurchaseOrders } from "@/services/purchase/usePurchase";
 import { Eye, MoreVertical, PenSquare, Search } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router";
-
-interface PurchaseRequest {
-  id: string;
-  project: string;
-  division: string;
-  date: string;
-  items: number;
-  amount: string;
-  status: "Approved" | "Pending" | "Rejected";
-}
 
 export default function PurchaseRequests() {
   const [activeTab, setActiveTab] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
-  // Mock data for purchase requests
-  const purchaseRequests: PurchaseRequest[] = [
-    {
-      id: "PR-2023-0125",
-      project: "Nagdhunga Tunnel",
-      division: "Electrical",
-      date: "2023-11-10",
-      items: 5,
-      amount: "$1,810.00",
-      status: "Approved",
-    },
-    {
-      id: "PR-2023-0124",
-      project: "Highway Bridge",
-      division: "Civil",
-      date: "2023-11-08",
-      items: 8,
-      amount: "$3,450.00",
-      status: "Approved",
-    },
-    {
-      id: "PR-2023-0123",
-      project: "Nagdhunga Tunnel",
-      division: "Mechanical",
-      date: "2023-11-05",
-      items: 3,
-      amount: "$950.00",
-      status: "Pending",
-    },
-    {
-      id: "PR-2023-0122",
-      project: "City Hospital",
-      division: "Electrical",
-      date: "2023-11-03",
-      items: 12,
-      amount: "$4,200.00",
-      status: "Approved",
-    },
-    {
-      id: "PR-2023-0121",
-      project: "Highway Bridge",
-      division: "Civil",
-      date: "2023-11-01",
-      items: 6,
-      amount: "$2,100.00",
-      status: "Rejected",
-    },
-    {
-      id: "PR-2023-0120",
-      project: "City Hospital",
-      division: "Plumbing",
-      date: "2023-10-28",
-      items: 4,
-      amount: "$780.00",
-      status: "Approved",
-    },
-    {
-      id: "PR-2023-0119",
-      project: "Nagdhunga Tunnel",
-      division: "Electrical",
-      date: "2023-10-25",
-      items: 7,
-      amount: "$1,950.00",
-      status: "Approved",
-    },
-  ];
+  // Use the new purchase order hook
+  const {
+    data: purchaseOrders = [],
+    isLoading,
+    error,
+  } = usePurchaseOrders({
+    search: searchQuery,
+    status: activeTab === "all" ? undefined : activeTab,
+  });
 
-  // Filter requests based on active tab
-  const filteredRequests = purchaseRequests.filter((request) => {
-    if (activeTab === "all") return true;
-    return request.status.toLowerCase() === activeTab.toLowerCase();
+  // Filter requests based on active tab and search
+  const filteredRequests = purchaseOrders.filter((order) => {
+    const matchesSearch =
+      !searchQuery ||
+      order.po_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      order.supplier.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      order.project.name.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesTab = activeTab === "all" || order.status === activeTab;
+
+    return matchesSearch && matchesTab;
   });
 
   // Format date to display in MM/DD/YYYY format
@@ -107,6 +48,48 @@ export default function PurchaseRequests() {
       day: "2-digit",
     });
   };
+
+  // Get status badge color
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "approved":
+        return "bg-green-100 text-green-800";
+      case "pending":
+        return "bg-yellow-100 text-yellow-800";
+      case "rejected":
+        return "bg-red-100 text-red-800";
+      case "delivered":
+        return "bg-blue-100 text-blue-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto py-6">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+          <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+          <div className="space-y-3">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="h-16 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto py-6">
+        <div className="text-center text-red-600">
+          <p>Error loading purchase requests. Please try again.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto py-6">
@@ -142,161 +125,148 @@ export default function PurchaseRequests() {
       {/* Tabs */}
       <div className="border-b border-gray-200 mb-6">
         <nav className="-mb-px flex space-x-8">
-          <button
-            onClick={() => setActiveTab("all")}
-            className={`py-4 px-1 border-b-2 font-medium text-sm ${
-              activeTab === "all"
-                ? "border-blue-500 text-blue-600"
-                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-            }`}
-          >
-            All Requests
-          </button>
-          <button
-            onClick={() => setActiveTab("pending")}
-            className={`py-4 px-1 border-b-2 font-medium text-sm ${
-              activeTab === "pending"
-                ? "border-blue-500 text-blue-600"
-                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-            }`}
-          >
-            Pending
-          </button>
-          <button
-            onClick={() => setActiveTab("approved")}
-            className={`py-4 px-1 border-b-2 font-medium text-sm ${
-              activeTab === "approved"
-                ? "border-blue-500 text-blue-600"
-                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-            }`}
-          >
-            Approved
-          </button>
-          <button
-            onClick={() => setActiveTab("rejected")}
-            className={`py-4 px-1 border-b-2 font-medium text-sm ${
-              activeTab === "rejected"
-                ? "border-blue-500 text-blue-600"
-                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-            }`}
-          >
-            Rejected
-          </button>
+          {[
+            { key: "all", label: "All", count: purchaseOrders.length },
+            {
+              key: "pending",
+              label: "Pending",
+              count: purchaseOrders.filter((o) => o.status === "pending")
+                .length,
+            },
+            {
+              key: "approved",
+              label: "Approved",
+              count: purchaseOrders.filter((o) => o.status === "approved")
+                .length,
+            },
+            {
+              key: "delivered",
+              label: "Delivered",
+              count: purchaseOrders.filter((o) => o.status === "delivered")
+                .length,
+            },
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === tab.key
+                  ? "border-blue-500 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }`}
+            >
+              {tab.label}
+              <span className="ml-2 bg-gray-100 text-gray-600 py-0.5 px-2 rounded-full text-xs">
+                {tab.count}
+              </span>
+            </button>
+          ))}
         </nav>
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="min-w-full bg-white">
-          <thead>
-            <tr className="border-b border-gray-200">
-              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Request ID
-              </th>
-              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Project
-              </th>
-              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Division
-              </th>
-              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Date
-              </th>
-              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Items
-              </th>
-              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Total Amount
-              </th>
-              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
-              </th>
-              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredRequests.map((request) => (
-              <tr
-                key={request.id}
-                className="border-b border-gray-200 hover:bg-gray-50"
-              >
-                <td className="py-4 px-4 text-sm font-medium text-gray-900">
-                  {request.id}
-                </td>
-                <td className="py-4 px-4 text-sm text-gray-500">
-                  {request.project}
-                </td>
-                <td className="py-4 px-4 text-sm text-gray-500">
-                  {request.division}
-                </td>
-                <td className="py-4 px-4 text-sm text-gray-500">
-                  {formatDate(request.date)}
-                </td>
-                <td className="py-4 px-4 text-sm text-gray-500">
-                  {request.items}
-                </td>
-                <td className="py-4 px-4 text-sm text-gray-500">
-                  {request.amount}
-                </td>
-                <td className="py-4 px-4 text-sm">
-                  <span
-                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      request.status === "Approved"
-                        ? "bg-green-100 text-green-800"
-                        : request.status === "Pending"
-                        ? "bg-yellow-100 text-yellow-800"
-                        : "bg-red-100 text-red-800"
-                    }`}
-                  >
-                    {request.status}
-                  </span>
-                </td>
-                <td className="py-4 px-4 text-sm text-gray-500">
-                  <div className="flex space-x-2">
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Link
-                            to={ROUTES.APP.PURCHASE.ORDER_DETAILS(request.id)}
-                            className="text-gray-600 hover:text-gray-900"
+      {/* Purchase Requests Table */}
+      <div className="bg-white shadow overflow-hidden sm:rounded-md">
+        <ul className="divide-y divide-gray-200">
+          {filteredRequests.length === 0 ? (
+            <li className="px-6 py-8 text-center text-gray-500">
+              {searchQuery
+                ? "No purchase requests match your search."
+                : "No purchase requests found."}
+            </li>
+          ) : (
+            filteredRequests.map((request) => (
+              <li key={request.id}>
+                <div className="px-6 py-4 flex items-center justify-between">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center space-x-3">
+                      <div className="flex-shrink-0">
+                        <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                          <span className="text-blue-600 font-semibold text-sm">
+                            {request.po_number.split("-")[2]}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center space-x-2">
+                          <p className="text-sm font-medium text-gray-900 truncate">
+                            {request.po_number}
+                          </p>
+                          <span
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
+                              request.status
+                            )}`}
                           >
-                            <Button variant="ghost" size="icon">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </Link>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>View Details</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                    <button className="text-gray-600 hover:text-gray-900">
-                      <PenSquare className="h-5 w-5" />
-                    </button>
-                    <button className="text-gray-600 hover:text-gray-900">
-                      <MoreVertical className="h-5 w-5" />
-                    </button>
+                            {request.status.charAt(0).toUpperCase() +
+                              request.status.slice(1)}
+                          </span>
+                        </div>
+                        <div className="mt-1 flex items-center space-x-4 text-sm text-gray-500">
+                          <span>{request.project.name}</span>
+                          <span>•</span>
+                          <span>{request.supplier.name}</span>
+                          <span>•</span>
+                          <span>{formatDate(request.order_date)}</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Pagination */}
-      <div className="flex items-center justify-between mt-6">
-        <div className="text-sm text-gray-500">Showing 1-7 of 24 results</div>
-        <div className="flex space-x-2">
-          <button className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
-            Previous
-          </button>
-          <button className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
-            Next
-          </button>
-        </div>
+                  <div className="flex items-center space-x-4">
+                    <div className="text-right">
+                      <p className="text-sm font-medium text-gray-900">
+                        ${request.total_amount.toLocaleString()}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {request.items.length} item
+                        {request.items.length !== 1 ? "s" : ""}
+                      </p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Link
+                              to={`/purchase/order/${request.id}/details`}
+                              className="p-2 text-gray-400 hover:text-gray-600"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Link>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>View Details</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button className="p-2 text-gray-400 hover:text-gray-600">
+                              <PenSquare className="h-4 w-4" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Edit</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button className="p-2 text-gray-400 hover:text-gray-600">
+                              <MoreVertical className="h-4 w-4" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>More Actions</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                  </div>
+                </div>
+              </li>
+            ))
+          )}
+        </ul>
       </div>
     </div>
   );

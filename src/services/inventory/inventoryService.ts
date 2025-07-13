@@ -10,7 +10,7 @@ import type {
 
 // Inventory API Service
 export const inventoryService = {
-  // GET /api/v1/inventory - List all inventory items
+  // GET /api/v1/inventory/ - List all inventory items
   getInventoryItems: async (
     params?: InventoryListParams
   ): Promise<InventoryItem[]> => {
@@ -24,7 +24,7 @@ export const inventoryService = {
     }
   },
 
-  // GET /api/v1/inventory/{id} - Get single inventory item (if needed)
+  // GET /api/v1/inventory/{id}/ - Get single inventory item
   getInventoryItem: async (id: number): Promise<InventoryItem> => {
     try {
       const response = await apiClient.get(
@@ -36,7 +36,7 @@ export const inventoryService = {
     }
   },
 
-  // POST /api/v1/inventory/create - Create new inventory item
+  // POST /api/v1/inventory/ - Create new inventory item
   createInventoryItem: async (
     data: CreateInventoryItemRequest
   ): Promise<InventoryItem[]> => {
@@ -48,7 +48,7 @@ export const inventoryService = {
     }
   },
 
-  // PUT /api/v1/inventory/edit/{id} - Update inventory item
+  // PUT /api/v1/inventory/{id}/ - Update inventory item
   updateInventoryItem: async (
     id: number,
     data: UpdateInventoryItemRequest
@@ -64,7 +64,7 @@ export const inventoryService = {
     }
   },
 
-  // DELETE /api/v1/inventory/delete/{id} - Delete inventory item
+  // DELETE /api/v1/inventory/{id}/ - Delete inventory item
   deleteInventoryItem: async (id: number): Promise<DeleteResponse> => {
     try {
       const response = await apiClient.delete(
