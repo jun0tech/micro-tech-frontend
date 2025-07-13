@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -23,88 +24,48 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ROUTES } from "@/constants/routes";
+import { useSuppliers } from "@/services/suppliers/useSupplier";
 import { Edit, Eye, MoreHorizontal, Plus, Search } from "lucide-react";
 import { useState } from "react";
-import { useNavigate } from "react-router";
-
-interface Supplier {
-  id: string;
-  name: string;
-  category: string;
-  location: string;
-  lastOrder: string;
-  performance: number;
-  status: "active" | "inactive" | "pending";
-}
-
-const mockSuppliers: Supplier[] = [
-  {
-    id: "1",
-    name: "Global Tech Solutions",
-    category: "Electronics",
-    location: "New York, USA",
-    lastOrder: "May 15, 2023",
-    performance: 98,
-    status: "active",
-  },
-  {
-    id: "2",
-    name: "EcoPackaging Inc.",
-    category: "Packaging",
-    location: "Toronto, Canada",
-    lastOrder: "May 12, 2023",
-    performance: 95,
-    status: "active",
-  },
-  {
-    id: "3",
-    name: "Precision Parts Ltd.",
-    category: "Manufacturing",
-    location: "Chicago, USA",
-    lastOrder: "May 10, 2023",
-    performance: 92,
-    status: "active",
-  },
-  {
-    id: "4",
-    name: "Green Materials Co.",
-    category: "Raw Materials",
-    location: "Seattle, USA",
-    lastOrder: "May 8, 2023",
-    performance: 94,
-    status: "active",
-  },
-  {
-    id: "5",
-    name: "Quality Chemicals Inc.",
-    category: "Chemicals",
-    location: "Houston, USA",
-    lastOrder: "May 2, 2023",
-    performance: 89,
-    status: "active",
-  },
-];
+import { Link, useNavigate } from "react-router";
 
 export function SuppliersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("active");
   const navigate = useNavigate();
 
-  const getFilteredSuppliers = () => {
-    let filtered = mockSuppliers;
+  // Use API hook instead of mock data
+  const {
+    data: suppliers,
+    isLoading,
+    error,
+  } = useSuppliers({
+    search: searchQuery || undefined,
+    status: activeTab === "all" ? undefined : activeTab,
+  });
 
-    // Filter by tab
+  const getFilteredSuppliers = () => {
+    if (!suppliers) return [];
+
+    let filtered = suppliers;
+
+    // Filter by tab (if not already filtered by API)
     if (activeTab !== "all") {
       filtered = filtered.filter((supplier) => supplier.status === activeTab);
     }
 
-    // Filter by search
+    // Filter by search (if not already filtered by API)
     if (searchQuery) {
       filtered = filtered.filter(
         (supplier) =>
           supplier.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          supplier.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          supplier.location.toLowerCase().includes(searchQuery.toLowerCase())
+          (supplier.category &&
+            supplier.category
+              .toLowerCase()
+              .includes(searchQuery.toLowerCase())) ||
+          (supplier.address &&
+            supplier.address.toLowerCase().includes(searchQuery.toLowerCase()))
       );
     }
 
@@ -113,12 +74,45 @@ export function SuppliersPage() {
 
   const filteredSuppliers = getFilteredSuppliers();
 
-  const getPerformanceColor = (performance: number) => {
+  const getPerformanceColor = (performance?: number) => {
+    if (!performance) return "text-gray-600";
     if (performance >= 95) return "text-green-600";
     if (performance >= 90) return "text-blue-600";
     if (performance >= 85) return "text-yellow-600";
     return "text-red-600";
   };
+
+  const getStatusBadgeClass = (status: string) => {
+    switch (status) {
+      case "active":
+        return "bg-green-100 text-green-800";
+      case "inactive":
+        return "bg-red-100 text-red-800";
+      case "pending":
+        return "bg-yellow-100 text-yellow-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="text-center py-8">
+          <p className="text-red-600">
+            Failed to load suppliers: {error.message}
+          </p>
+          <Button
+            onClick={() => window.location.reload()}
+            variant="outline"
+            className="mt-4"
+          >
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -126,11 +120,15 @@ export function SuppliersPage() {
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
-            <BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink>
+            <BreadcrumbLink href={ROUTES.APP.DASHBOARD}>
+              Dashboard
+            </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbLink href="/suppliers">Suppliers</BreadcrumbLink>
+            <BreadcrumbLink href={ROUTES.APP.SUPPLIERS.LIST}>
+              Suppliers
+            </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
@@ -143,11 +141,13 @@ export function SuppliersPage() {
 
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Active Suppliers</h1>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Supplier
-        </Button>
+        <h1 className="text-2xl font-bold">Suppliers</h1>
+        <Link to={ROUTES.APP.SUPPLIERS.NEW}>
+          <Button>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Supplier
+          </Button>
+        </Link>
       </div>
 
       {/* Tabs and Search */}
@@ -163,7 +163,7 @@ export function SuppliersPage() {
           <div className="relative w-80">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Search active suppliers..."
+              placeholder="Search suppliers..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
@@ -171,79 +171,189 @@ export function SuppliersPage() {
           </div>
         </div>
 
-        <TabsContent value={activeTab}>
-          {/* Results count */}
-          <div className="mb-4">
-            <p className="text-sm text-muted-foreground">
-              {filteredSuppliers.length} active suppliers found
-            </p>
+        <TabsContent value={activeTab} className="space-y-4">
+          {/* Statistics */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="bg-white p-4 rounded-lg border">
+              <h3 className="text-sm font-medium text-gray-500">
+                Total Suppliers
+              </h3>
+              <p className="text-2xl font-bold text-gray-900">
+                {isLoading ? (
+                  <Skeleton className="h-8 w-16" />
+                ) : (
+                  suppliers?.length || 0
+                )}
+              </p>
+            </div>
+            <div className="bg-white p-4 rounded-lg border">
+              <h3 className="text-sm font-medium text-gray-500">Active</h3>
+              <p className="text-2xl font-bold text-green-600">
+                {isLoading ? (
+                  <Skeleton className="h-8 w-16" />
+                ) : (
+                  suppliers?.filter((s) => s.status === "active").length || 0
+                )}
+              </p>
+            </div>
+            <div className="bg-white p-4 rounded-lg border">
+              <h3 className="text-sm font-medium text-gray-500">Pending</h3>
+              <p className="text-2xl font-bold text-yellow-600">
+                {isLoading ? (
+                  <Skeleton className="h-8 w-16" />
+                ) : (
+                  suppliers?.filter((s) => s.status === "pending").length || 0
+                )}
+              </p>
+            </div>
+            <div className="bg-white p-4 rounded-lg border">
+              <h3 className="text-sm font-medium text-gray-500">Inactive</h3>
+              <p className="text-2xl font-bold text-red-600">
+                {isLoading ? (
+                  <Skeleton className="h-8 w-16" />
+                ) : (
+                  suppliers?.filter((s) => s.status === "inactive").length || 0
+                )}
+              </p>
+            </div>
           </div>
 
           {/* Table */}
-          <div className="rounded-lg border bg-card">
+          <div className="bg-white rounded-lg border">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Supplier Name</TableHead>
                   <TableHead>Category</TableHead>
-                  <TableHead>Location</TableHead>
-                  <TableHead>Last Order</TableHead>
+                  <TableHead>Contact</TableHead>
+                  <TableHead>Status</TableHead>
                   <TableHead>Performance</TableHead>
-                  <TableHead className="w-[100px]">Actions</TableHead>
+                  <TableHead>Last Order</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredSuppliers.map((supplier) => (
-                  <TableRow key={supplier.id}>
-                    <TableCell className="font-medium">
-                      <div className="flex items-center space-x-2">
-                        <div className="h-8 w-8 rounded bg-muted flex items-center justify-center">
-                          <span className="text-xs font-medium">
-                            {supplier.name
-                              .split(" ")
-                              .map((word) => word[0])
-                              .join("")
-                              .slice(0, 2)}
-                          </span>
-                        </div>
-                        <span>{supplier.name}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>{supplier.category}</TableCell>
-                    <TableCell>{supplier.location}</TableCell>
-                    <TableCell>{supplier.lastOrder}</TableCell>
-                    <TableCell>
-                      <span
-                        className={getPerformanceColor(supplier.performance)}
-                      >
-                        {supplier.performance}%
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() =>
-                              navigate(`/suppliers/${supplier.id}`)
-                            }
-                          >
-                            <Eye className="mr-2 h-4 w-4" />
-                            View Details
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Edit
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                {isLoading ? (
+                  // Loading skeletons
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <TableRow key={i}>
+                      <TableCell>
+                        <Skeleton className="h-4 w-32" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-4 w-24" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-4 w-28" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-4 w-16" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-4 w-12" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-4 w-20" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-8 w-8 ml-auto" />
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : filteredSuppliers.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8">
+                      <p className="text-gray-500">No suppliers found</p>
+                      {searchQuery && (
+                        <p className="text-sm text-gray-400 mt-1">
+                          Try adjusting your search terms
+                        </p>
+                      )}
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  filteredSuppliers.map((supplier) => (
+                    <TableRow key={supplier.id}>
+                      <TableCell className="font-medium">
+                        {supplier.name}
+                      </TableCell>
+                      <TableCell>
+                        <span className="capitalize">
+                          {supplier.category || "N/A"}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          {supplier.contact_person && (
+                            <p className="text-sm font-medium">
+                              {supplier.contact_person}
+                            </p>
+                          )}
+                          {supplier.email && (
+                            <p className="text-xs text-gray-500">
+                              {supplier.email}
+                            </p>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(
+                            supplier.status
+                          )}`}
+                        >
+                          {supplier.status.charAt(0).toUpperCase() +
+                            supplier.status.slice(1)}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span
+                          className={`font-medium ${getPerformanceColor(
+                            supplier.performance_rating
+                          )}`}
+                        >
+                          {supplier.performance_rating
+                            ? `${supplier.performance_rating}%`
+                            : "N/A"}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-sm text-gray-500">
+                        {supplier.last_order_date
+                          ? new Date(
+                              supplier.last_order_date
+                            ).toLocaleDateString()
+                          : "No orders"}
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() =>
+                                navigate(ROUTES.APP.SUPPLIERS.VIEW(supplier.id))
+                              }
+                            >
+                              <Eye className="mr-2 h-4 w-4" />
+                              View Details
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() =>
+                                navigate(ROUTES.APP.SUPPLIERS.EDIT(supplier.id))
+                              }
+                            >
+                              <Edit className="mr-2 h-4 w-4" />
+                              Edit
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </div>
@@ -251,12 +361,17 @@ export function SuppliersPage() {
           {/* Footer */}
           <div className="flex items-center justify-between mt-6">
             <p className="text-sm text-muted-foreground">
-              Showing 1-{filteredSuppliers.length} of {filteredSuppliers.length}{" "}
-              active suppliers
+              Showing{" "}
+              {isLoading
+                ? "..."
+                : `1-${filteredSuppliers.length} of ${filteredSuppliers.length}`}{" "}
+              suppliers
             </p>
             <div className="flex space-x-2">
               <Button variant="outline">Export CSV</Button>
-              <Button variant="outline">Back to All</Button>
+              <Link to={ROUTES.APP.SUPPLIERS.LIST}>
+                <Button variant="outline">Back to All</Button>
+              </Link>
             </div>
           </div>
         </TabsContent>

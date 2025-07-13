@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormInput } from "@/components/ui/form-input";
 import { FormSelect } from "@/components/ui/form-select";
 import { FormTextarea } from "@/components/ui/form-textarea";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -19,24 +20,41 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ROUTES } from "@/constants/routes";
+import {
+  useSupplier,
+  useUpdateSupplier,
+} from "@/services/suppliers/useSupplier";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowDown, ArrowUp, CheckCircle, Clock, XCircle } from "lucide-react";
-import { useState } from "react";
+import { ArrowDown, ArrowUp, CheckCircle } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useParams } from "react-router";
 import { z } from "zod";
 
 const supplierSchema = z.object({
   name: z.string().min(2, "Supplier name must be at least 2 characters"),
-  id: z.string().min(1, "Supplier ID is required"),
-  contact: z
+  contact_person: z
     .string()
-    .min(2, "Contact person name must be at least 2 characters"),
-  phone: z.string().min(10, "Phone number must be at least 10 digits"),
-  email: z.string().email("Please enter a valid email address"),
+    .min(2, "Contact person name must be at least 2 characters")
+    .optional()
+    .or(z.literal("")),
+  phone: z
+    .string()
+    .min(10, "Phone number must be at least 10 digits")
+    .optional()
+    .or(z.literal("")),
+  email: z
+    .string()
+    .email("Please enter a valid email address")
+    .optional()
+    .or(z.literal("")),
   category: z.string().min(1, "Please select a category"),
-  address: z.string().min(5, "Address must be at least 5 characters"),
-  remarks: z.string().optional(),
+  address: z
+    .string()
+    .min(5, "Address must be at least 5 characters")
+    .optional()
+    .or(z.literal("")),
 });
 
 type SupplierFormValues = z.infer<typeof supplierSchema>;
@@ -45,29 +63,61 @@ export function SupplierDetail() {
   const { id } = useParams();
   const [editMode, setEditMode] = useState(false);
 
-  // Mock data - replace with actual data fetching
-  const mockSupplier: SupplierFormValues = {
-    name: "Global Tech Solutions",
-    id: "SUP-001",
-    contact: "John Smith",
-    phone: "+91 9876543210",
-    email: "john.smith@globaltech.com",
-    category: "Electronics",
-    address: "123 Tech Park, Electronic City, Bangalore - 560100",
-    remarks: "Reliable supplier with excellent delivery record.",
-  };
+  // Use API hook to fetch supplier data
+  const {
+    data: supplier,
+    isLoading,
+    error,
+  } = useSupplier(id ? parseInt(id) : 0);
+  const { mutateAsync: updateSupplier, isPending } = useUpdateSupplier();
 
   const { control, handleSubmit, reset, watch } = useForm<SupplierFormValues>({
     resolver: zodResolver(supplierSchema),
-    defaultValues: mockSupplier,
+    defaultValues: {
+      name: "",
+      contact_person: "",
+      phone: "",
+      email: "",
+      category: "",
+      address: "",
+    },
   });
 
   const currentValues = watch();
 
-  const onSubmit = (data: SupplierFormValues) => {
-    console.log("Supplier updated:", data);
-    setEditMode(false);
-    // Add save logic here
+  // Reset form when supplier data is loaded
+  useEffect(() => {
+    if (supplier) {
+      reset({
+        name: supplier.name || "",
+        contact_person: supplier.contact_person || "",
+        phone: supplier.phone || "",
+        email: supplier.email || "",
+        category: supplier.category || "",
+        address: supplier.address || "",
+      });
+    }
+  }, [supplier, reset]);
+
+  const onSubmit = async (data: SupplierFormValues) => {
+    if (!id) return;
+
+    try {
+      await updateSupplier({
+        id: parseInt(id),
+        data: {
+          ...data,
+          // Convert empty strings to undefined for optional fields
+          contact_person: data.contact_person || undefined,
+          phone: data.phone || undefined,
+          email: data.email || undefined,
+          address: data.address || undefined,
+        },
+      });
+      setEditMode(false);
+    } catch (error) {
+      console.error("Failed to update supplier:", error);
+    }
   };
 
   const handleEdit = () => {
@@ -75,7 +125,16 @@ export function SupplierDetail() {
   };
 
   const handleCancel = () => {
-    reset(mockSupplier);
+    if (supplier) {
+      reset({
+        name: supplier.name || "",
+        contact_person: supplier.contact_person || "",
+        phone: supplier.phone || "",
+        email: supplier.email || "",
+        category: supplier.category || "",
+        address: supplier.address || "",
+      });
+    }
     setEditMode(false);
   };
 
@@ -86,56 +145,88 @@ export function SupplierDetail() {
     { value: "chemicals", label: "Chemicals" },
     { value: "packaging", label: "Packaging" },
     { value: "hardware", label: "Hardware" },
+    { value: "software", label: "Software" },
+    { value: "services", label: "Services" },
+    { value: "raw-materials", label: "Raw Materials" },
+    { value: "other", label: "Other" },
   ];
 
-  // Helper for rendering fields
-  const renderField = (
-    label: string,
-    value: string,
-    field: keyof SupplierFormValues,
-    type = "text"
-  ) => {
-    if (editMode) {
-      if (field === "remarks") {
-        return (
-          <div className="flex flex-col">
-            <FormTextarea
-              name={field}
-              label={label}
-              control={control}
-              rows={3}
-            />
-          </div>
-        );
-      }
-      if (field === "category") {
-        return (
-          <div className="flex flex-col">
-            <FormSelect
-              name={field}
-              label={label}
-              options={categoryOptions}
-              control={control}
-            />
-          </div>
-        );
-      }
-      return (
-        <div className="flex flex-col">
-          <FormInput name={field} label={label} type={type} control={control} />
-        </div>
-      );
-    }
-    // Read-only mode
+  // Mock performance data - this would come from API in real implementation
+  const performanceData = [
+    {
+      month: "Jan 2024",
+      orders: 15,
+      onTime: 14,
+      rating: 93,
+      trend: "up",
+    },
+    {
+      month: "Feb 2024",
+      orders: 18,
+      onTime: 17,
+      rating: 94,
+      trend: "up",
+    },
+    {
+      month: "Mar 2024",
+      orders: 12,
+      onTime: 11,
+      rating: 92,
+      trend: "down",
+    },
+  ];
+
+  if (error) {
     return (
-      <div className="flex flex-col">
-        <label className="block text-xs font-medium mb-1">{label}</label>
-        <div className="bg-white border-b border-border px-3 py-2 text-sm select-text">
-          {value}
+      <div className="space-y-6 max-w-5xl mx-auto">
+        <div className="text-center py-8">
+          <p className="text-red-600">
+            Failed to load supplier: {error.message}
+          </p>
+          <Button
+            onClick={() => window.location.reload()}
+            variant="outline"
+            className="mt-4"
+          >
+            Retry
+          </Button>
         </div>
       </div>
     );
-  };
+  }
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6 max-w-5xl mx-auto">
+        <Skeleton className="h-6 w-64" />
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-48" />
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="space-y-2">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!supplier) {
+    return (
+      <div className="space-y-6 max-w-5xl mx-auto">
+        <div className="text-center py-8">
+          <p className="text-gray-500">Supplier not found</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
@@ -143,11 +234,15 @@ export function SupplierDetail() {
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
-            <BreadcrumbLink href="/suppliers">Suppliers</BreadcrumbLink>
+            <BreadcrumbLink href={ROUTES.APP.SUPPLIERS.LIST}>
+              Suppliers
+            </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>{currentValues.name}</BreadcrumbPage>
+            <BreadcrumbPage>
+              {currentValues.name || supplier.name}
+            </BreadcrumbPage>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
@@ -161,7 +256,7 @@ export function SupplierDetail() {
         <Card className="bg-muted/40">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>Status Flow</CardTitle>
+              <CardTitle>Supplier Information</CardTitle>
               {!editMode && (
                 <Button
                   size="sm"
@@ -174,14 +269,15 @@ export function SupplierDetail() {
               )}
               {editMode && (
                 <div className="flex gap-2">
-                  <Button size="sm" type="submit">
-                    Save
+                  <Button size="sm" type="submit" disabled={isPending}>
+                    {isPending ? "Saving..." : "Save"}
                   </Button>
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={handleCancel}
                     type="button"
+                    disabled={isPending}
                   >
                     Cancel
                   </Button>
@@ -189,213 +285,156 @@ export function SupplierDetail() {
               )}
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-8">
-                <div className="flex items-center space-x-2">
-                  <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
-                    <CheckCircle className="h-5 w-5 text-white" />
-                  </div>
-                  <span className="text-sm font-medium">Active</span>
-                </div>
-                <ArrowDown className="h-4 w-4 text-muted-foreground" />
-                <div className="flex items-center space-x-2">
-                  <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center">
-                    <Clock className="h-5 w-5 text-gray-600" />
-                  </div>
-                  <span className="text-sm text-muted-foreground">Pending</span>
-                </div>
-                <ArrowDown className="h-4 w-4 text-muted-foreground" />
-                <div className="flex items-center space-x-2">
-                  <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center">
-                    <XCircle className="h-5 w-5 text-gray-600" />
-                  </div>
-                  <span className="text-sm text-muted-foreground">
-                    Inactive
+
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormInput
+                id="name"
+                name="name"
+                label="Supplier Name"
+                control={control}
+                disabled={!editMode}
+                required
+              />
+
+              <FormInput
+                id="contact_person"
+                name="contact_person"
+                label="Contact Person"
+                control={control}
+                disabled={!editMode}
+              />
+
+              <FormInput
+                id="phone"
+                name="phone"
+                label="Phone Number"
+                control={control}
+                disabled={!editMode}
+              />
+
+              <FormInput
+                id="email"
+                name="email"
+                type="email"
+                label="Email Address"
+                control={control}
+                disabled={!editMode}
+              />
+
+              <FormSelect
+                id="category"
+                name="category"
+                label="Category"
+                options={categoryOptions}
+                control={control}
+                disabled={!editMode}
+                required
+              />
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Status
+                </label>
+                <div>
+                  <span
+                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      supplier.status === "active"
+                        ? "bg-green-100 text-green-800"
+                        : supplier.status === "pending"
+                        ? "bg-yellow-100 text-yellow-800"
+                        : "bg-red-100 text-red-800"
+                    }`}
+                  >
+                    {supplier.status.charAt(0).toUpperCase() +
+                      supplier.status.slice(1)}
                   </span>
                 </div>
               </div>
-              <div className="text-right">
-                <p className="text-sm text-muted-foreground">Last Updated</p>
-                <p className="text-sm font-medium">Nov 15, 2023</p>
-              </div>
             </div>
+
+            <FormTextarea
+              id="address"
+              name="address"
+              label="Address"
+              control={control}
+              disabled={!editMode}
+              rows={3}
+            />
           </CardContent>
         </Card>
 
-        {/* Procurement Details */}
+        {/* Performance Overview */}
         <Card>
           <CardHeader>
-            <CardTitle>Procurement Details</CardTitle>
+            <CardTitle>Performance Overview</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-xs font-medium mb-1">
-                  Total Orders
-                </label>
-                <div className="bg-white border-b border-border px-3 py-2 text-sm select-text">
-                  45
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              <div className="text-center">
+                <p className="text-2xl font-bold text-green-600">
+                  {supplier.performance_rating || 0}%
+                </p>
+                <p className="text-sm text-gray-500">Overall Rating</p>
               </div>
-              <div>
-                <label className="block text-xs font-medium mb-1">
-                  Total Value
-                </label>
-                <div className="bg-white border-b border-border px-3 py-2 text-sm select-text">
-                  ₹12,50,000
-                </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-blue-600">45</p>
+                <p className="text-sm text-gray-500">Total Orders</p>
               </div>
-              <div>
-                <label className="block text-xs font-medium mb-1">Status</label>
-                <div className="bg-white border-b border-border px-3 py-2 text-sm select-text">
-                  Active
-                </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-green-600">42</p>
+                <p className="text-sm text-gray-500">On-Time Deliveries</p>
               </div>
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Supplier Information */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Supplier Information</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {renderField("Supplier Name", currentValues.name, "name")}
-              {renderField("Supplier ID", currentValues.id, "id")}
-              {renderField("Contact Person", currentValues.contact, "contact")}
-              {renderField("Contact Number", currentValues.phone, "phone")}
-              {renderField("Email", currentValues.email, "email", "email")}
-              {renderField("Category", currentValues.category, "category")}
-              <div className="md:col-span-2">
-                {renderField("Address", currentValues.address, "address")}
-              </div>
-              <div className="md:col-span-2">
-                {renderField("Remarks", currentValues.remarks || "", "remarks")}
-              </div>
-            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Month</TableHead>
+                  <TableHead>Orders</TableHead>
+                  <TableHead>On-Time</TableHead>
+                  <TableHead>Rating</TableHead>
+                  <TableHead>Trend</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {performanceData.map((row) => (
+                  <TableRow key={row.month}>
+                    <TableCell>{row.month}</TableCell>
+                    <TableCell>{row.orders}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <span>{row.onTime}</span>
+                        <CheckCircle className="h-4 w-4 text-green-500" />
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <span
+                        className={`font-medium ${
+                          row.rating >= 95
+                            ? "text-green-600"
+                            : row.rating >= 90
+                            ? "text-blue-600"
+                            : "text-yellow-600"
+                        }`}
+                      >
+                        {row.rating}%
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      {row.trend === "up" ? (
+                        <ArrowUp className="h-4 w-4 text-green-500" />
+                      ) : (
+                        <ArrowDown className="h-4 w-4 text-red-500" />
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
       </form>
-
-      {/* Supply Chain Information */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Supply Chain Information</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-medium mb-1">
-                Lead Time
-              </label>
-              <div className="bg-white border-b border-border px-3 py-2 text-sm select-text">
-                5-7 business days
-              </div>
-            </div>
-            <div>
-              <label className="block text-xs font-medium mb-1">
-                Payment Terms
-              </label>
-              <div className="bg-white border-b border-border px-3 py-2 text-sm select-text">
-                Net 30 days
-              </div>
-            </div>
-            <div>
-              <label className="block text-xs font-medium mb-1">
-                Minimum Order Value
-              </label>
-              <div className="bg-white border-b border-border px-3 py-2 text-sm select-text">
-                ₹10,000
-              </div>
-            </div>
-            <div>
-              <label className="block text-xs font-medium mb-1">
-                Delivery Areas
-              </label>
-              <div className="bg-white border-b border-border px-3 py-2 text-sm select-text">
-                Pan India
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Recent Orders */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Orders</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Order ID</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Items</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Performance</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              <TableRow>
-                <TableCell className="font-medium">ORD-2023-001</TableCell>
-                <TableCell>Nov 10, 2023</TableCell>
-                <TableCell>5</TableCell>
-                <TableCell>₹25,000</TableCell>
-                <TableCell>
-                  <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
-                    Delivered
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center">
-                    <ArrowUp className="h-4 w-4 text-green-500 mr-1" />
-                    <span className="text-sm text-green-600">95%</span>
-                  </div>
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">ORD-2023-002</TableCell>
-                <TableCell>Nov 5, 2023</TableCell>
-                <TableCell>3</TableCell>
-                <TableCell>₹18,500</TableCell>
-                <TableCell>
-                  <span className="inline-flex items-center rounded-full bg-yellow-50 px-2 py-1 text-xs font-medium text-yellow-700 ring-1 ring-inset ring-yellow-600/20">
-                    In Transit
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center">
-                    <ArrowUp className="h-4 w-4 text-green-500 mr-1" />
-                    <span className="text-sm text-green-600">92%</span>
-                  </div>
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">ORD-2023-003</TableCell>
-                <TableCell>Oct 28, 2023</TableCell>
-                <TableCell>8</TableCell>
-                <TableCell>₹42,000</TableCell>
-                <TableCell>
-                  <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
-                    Delivered
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center">
-                    <ArrowUp className="h-4 w-4 text-green-500 mr-1" />
-                    <span className="text-sm text-green-600">98%</span>
-                  </div>
-                </TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
     </div>
   );
 }

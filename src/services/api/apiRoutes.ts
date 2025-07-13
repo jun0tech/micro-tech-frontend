@@ -21,5 +21,11 @@ export const API_ROUTES = {
   projectCreate: "/project/project/",
   projectEdit: "/project/project/",
   projectDelete: "/project/project/",
+  // Supplier endpoints
+  supplierList: "/supplier/supplier/",
+  supplierDetail: "/supplier/supplier/",
+  supplierCreate: "/supplier/supplier/",
+  supplierEdit: "/supplier/supplier/",
+  supplierDelete: "/supplier/supplier/",
   // Add more endpoints as needed
 };

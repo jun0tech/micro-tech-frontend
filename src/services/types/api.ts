@@ -129,8 +129,51 @@ export interface ProjectListParams extends PaginationParams {
   status?: string;
 }
 
+// Supplier types
+export interface Supplier {
+  id: number;
+  name: string;
+  contact_person?: string;
+  phone?: string;
+  email?: string;
+  category?: string;
+  address?: string;
+  status: "active" | "inactive" | "pending";
+  performance_rating?: number;
+  last_order_date?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface CreateSupplierRequest {
+  name: string;
+  contact_person?: string;
+  phone?: string;
+  email?: string;
+  category?: string;
+  address?: string;
+  status?: "active" | "inactive" | "pending";
+}
+
+export interface UpdateSupplierRequest {
+  name?: string;
+  contact_person?: string;
+  phone?: string;
+  email?: string;
+  category?: string;
+  address?: string;
+  status?: "active" | "inactive" | "pending";
+}
+
+export interface SupplierListParams extends PaginationParams {
+  status?: string;
+  category?: string;
+}
+
 // API endpoint responses
 export type InventoryListResponse = InventoryItem[];
 export type ProjectListResponse = Project[];
 export type InventoryItemResponse = InventoryItem[];
 export type ProjectResponse = Project[];
+export type SupplierListResponse = Supplier[];
+export type SupplierResponse = Supplier;

@@ -1,3 +1,4 @@
+import AddEditSupplier from "@/pages/(app)/AddEditSupplier";
 import AddInventoryItem from "@/pages/(app)/AddInventoryItem";
 import CreateProject from "@/pages/(app)/CreateProject";
 import CreatePurchaseOrder from "@/pages/(app)/CreatePurchaseOrder";
@@ -9,6 +10,7 @@ import Projects from "@/pages/(app)/Projects";
 import Suppliers from "@/pages/(app)/Suppliers";
 import ViewInventoryItem from "@/pages/(app)/ViewInventoryItem";
 import ViewProject from "@/pages/(app)/ViewProject";
+import ViewSupplier from "@/pages/(app)/ViewSupplier";
 import Login from "@/pages/(auth)/login/index";
 import Register from "@/pages/(auth)/register";
 import NotificationsPage from "@/pages/management/notifications";
@@ -60,6 +62,12 @@ function App() {
             path={ROUTES.APP.SUPPLIERS.LIST.slice(1)}
             element={<Suppliers />}
           />
+          <Route
+            path={ROUTES.APP.SUPPLIERS.NEW.slice(1)}
+            element={<AddEditSupplier />}
+          />
+          <Route path="suppliers/edit/:id" element={<AddEditSupplier />} />
+          <Route path="suppliers/:id" element={<ViewSupplier />} />
 
           {/* Purchase Routes */}
           <Route
