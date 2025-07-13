@@ -1,13 +1,14 @@
+import { Button } from "@/components/ui/button";
+import { ROUTES } from "@/constants/routes";
 import { Building } from "lucide-react";
-
-interface Project {
-  id: number;
-  name: string;
-  procurements: number;
-}
+import { Link } from "react-router";
 
 interface ProjectCardProps {
-  project: Project;
+  project: {
+    id: number;
+    name: string;
+    procurements: number;
+  };
 }
 
 export function ProjectCard({ project }: ProjectCardProps) {
@@ -26,18 +27,19 @@ export function ProjectCard({ project }: ProjectCardProps) {
       </div>
 
       <div className="flex space-x-2">
-        <button
-          className="flex-1 text-center py-2 px-4 text-sm font-medium border border-blue-600 text-blue-600 bg-white rounded-md hover:bg-blue-50"
-          onClick={() => console.log(`View details for ${project.name}`)}
-        >
-          View Details
-        </button>
-        <button
-          className="flex-1 text-center py-2 px-4 text-sm font-medium bg-blue-600 text-white rounded-md hover:bg-blue-700"
-          onClick={() => console.log(`Add items to ${project.name}`)}
-        >
-          Add Items
-        </button>
+        <Link to={ROUTES.APP.PROJECTS.VIEW(project.id)} className="flex-1">
+          <Button
+            variant="outline"
+            className="w-full text-center py-2 px-4 text-sm font-medium border border-blue-600 text-blue-600 bg-white rounded-md hover:bg-blue-50"
+          >
+            View Details
+          </Button>
+        </Link>
+        <Link to={ROUTES.APP.INVENTORY.NEW} className="flex-1">
+          <Button className="w-full text-center py-2 px-4 text-sm font-medium bg-blue-600 text-white rounded-md hover:bg-blue-700">
+            Add Items
+          </Button>
+        </Link>
       </div>
     </div>
   );

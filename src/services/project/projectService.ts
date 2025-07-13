@@ -30,7 +30,7 @@ export const projectService = {
     }
   },
 
-  // POST /api/v1/project/create - Create new project
+  // POST /api/v1/project/project/ - Create new project
   createProject: async (data: CreateProjectRequest): Promise<Project[]> => {
     try {
       const response = await apiClient.post(API_ROUTES.projectCreate, data);
@@ -40,13 +40,13 @@ export const projectService = {
     }
   },
 
-  // POST /api/v1/project/edit/{id} - Update project
+  // PUT /api/v1/project/project/{id}/ - Update project
   updateProject: async (
     id: number,
     data: UpdateProjectRequest
   ): Promise<Project[]> => {
     try {
-      const response = await apiClient.post(
+      const response = await apiClient.put(
         `${API_ROUTES.projectEdit}${id}/`,
         data
       );
@@ -56,7 +56,7 @@ export const projectService = {
     }
   },
 
-  // DELETE /api/v1/project/delete/{id} - Delete project
+  // DELETE /api/v1/project/project/{id}/ - Delete project
   deleteProject: async (id: number): Promise<DeleteResponse> => {
     try {
       const response = await apiClient.delete(

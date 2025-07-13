@@ -1,3 +1,4 @@
+import { ROUTE_LABELS } from "@/constants/routes";
 import { useLocation, useParams } from "react-router";
 import {
   Breadcrumb,
@@ -7,24 +8,6 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "./breadcrumb";
-
-// Optional: Map route segments to friendly names
-const ROUTE_LABELS: Record<string, string> = {
-  "": "Dashboard",
-  dashboard: "Dashboard",
-  suppliers: "Suppliers",
-  inventory: "Inventory",
-  purchase: "Purchase",
-  users: "Users",
-  profile: "User Profile",
-  add: "Add",
-  new: "New",
-  edit: "Edit",
-  detail: "Detail",
-  "purchase-order": "Purchase Order",
-  "purchase-requests": "Purchase Requests",
-  management: "Management",
-};
 
 function getLabel(segment: string, params: Record<string, string>) {
   // If it's a param (e.g. :id), show the value

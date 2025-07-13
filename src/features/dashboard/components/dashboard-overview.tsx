@@ -1,3 +1,4 @@
+import { ROUTES } from "@/constants/routes";
 import { AlertTriangle, ClipboardList, Folder, Truck } from "lucide-react";
 import React from "react";
 import { Link } from "react-router";
@@ -61,7 +62,7 @@ export function DashboardOverview() {
           description="8 projects in progress"
           icon={<Folder className="h-6 w-6" />}
           actionLabel="View All"
-          actionHref="/projects"
+          actionHref={ROUTES.APP.PROJECTS.LIST}
           iconBgColor="bg-blue-100"
           iconColor="text-blue-600"
         />
@@ -72,7 +73,7 @@ export function DashboardOverview() {
           description="12 orders awaiting approval"
           icon={<ClipboardList className="h-6 w-6" />}
           actionLabel="Review"
-          actionHref="/purchase"
+          actionHref={ROUTES.APP.PURCHASE.LIST}
           iconBgColor="bg-blue-100"
           iconColor="text-blue-600"
         />
@@ -83,7 +84,7 @@ export function DashboardOverview() {
           description="5 items below threshold"
           icon={<AlertTriangle className="h-6 w-6" />}
           actionLabel="Restock"
-          actionHref="/inventory"
+          actionHref={ROUTES.APP.INVENTORY.LIST}
           iconBgColor="bg-blue-100"
           iconColor="text-blue-600"
         />

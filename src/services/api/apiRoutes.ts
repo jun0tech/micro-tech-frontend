@@ -16,10 +16,10 @@ export const API_ROUTES = {
   inventoryEdit: "/inventory/edit/",
   inventoryDelete: "/inventory/delete/",
   // Project endpoints
-  projectList: "/project/",
-  projectDetail: "/project/",
-  projectCreate: "/project/create/",
-  projectEdit: "/project/edit/",
-  projectDelete: "/project/delete/",
+  projectList: "/project/project/",
+  projectDetail: "/project/project/",
+  projectCreate: "/project/project/",
+  projectEdit: "/project/project/",
+  projectDelete: "/project/project/",
   // Add more endpoints as needed
 };

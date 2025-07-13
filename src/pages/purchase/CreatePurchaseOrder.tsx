@@ -212,6 +212,7 @@ export default function CreatePurchaseOrder() {
                       <td className="py-2">{index + 1}</td>
                       <td className="py-2">
                         <FormInput
+                          label="Item Name"
                           name={`items.${index}.name`}
                           placeholder="Enter item name"
                           control={control}
@@ -220,6 +221,7 @@ export default function CreatePurchaseOrder() {
                       </td>
                       <td className="py-2">
                         <FormInput
+                          label="Quantity"
                           name={`items.${index}.quantity`}
                           type="number"
                           min="1"
@@ -229,6 +231,7 @@ export default function CreatePurchaseOrder() {
                       </td>
                       <td className="py-2">
                         <FormInput
+                          label="Unit Price"
                           name={`items.${index}.price`}
                           type="number"
                           min="0"

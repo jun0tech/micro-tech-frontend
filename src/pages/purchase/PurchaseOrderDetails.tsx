@@ -154,11 +154,11 @@ export default function PurchaseOrderDetails() {
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
-            <BreadcrumbLink href="/purchase">Purchase Orders</BreadcrumbLink>
+            <BreadcrumbLink href="/purchase">Purchase Requests</BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbLink href={`/purchase/order/${id}`}>
+            <BreadcrumbLink href={`/purchase/order/${id}/details`}>
               {orderData.id}
             </BreadcrumbLink>
           </BreadcrumbItem>

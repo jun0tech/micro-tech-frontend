@@ -8,6 +8,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { ROUTES } from "@/constants/routes";
 import { cn } from "@/lib/utils";
 import {
   AppWindow,
@@ -77,31 +78,31 @@ export function AppSidebar() {
           <SidebarItem
             icon={LayoutDashboard}
             label="Dashboard"
-            href="/"
-            isActive={pathname === "/"}
+            href={ROUTES.APP.DASHBOARD}
+            isActive={pathname === ROUTES.APP.DASHBOARD}
           />
           <SidebarItem
             icon={ShoppingCart}
             label="Purchase"
-            href="/purchase"
+            href={ROUTES.APP.PURCHASE.LIST}
             isActive={pathname.startsWith("/purchase")}
           />
           <SidebarItem
             icon={Warehouse}
             label="Inventory"
-            href="/inventory"
+            href={ROUTES.APP.INVENTORY.LIST}
             isActive={pathname.startsWith("/inventory")}
           />
           <SidebarItem
             icon={Users}
             label="Suppliers"
-            href="/suppliers"
+            href={ROUTES.APP.SUPPLIERS.LIST}
             isActive={pathname.startsWith("/suppliers")}
           />
           <SidebarItem
             icon={Briefcase}
             label="Projects"
-            href="/projects"
+            href={ROUTES.APP.PROJECTS.LIST}
             isActive={pathname.startsWith("/projects")}
           />
 
@@ -118,13 +119,13 @@ export function AppSidebar() {
           <SidebarItem
             icon={Bell}
             label="Notifications"
-            href="/management/notifications"
+            href={ROUTES.APP.MANAGEMENT.NOTIFICATIONS}
             isActive={pathname.startsWith("/management/notifications")}
           />
           <SidebarItem
             icon={Settings}
             label="Settings"
-            href="/management/settings"
+            href={ROUTES.APP.MANAGEMENT.SETTINGS}
             isActive={pathname.startsWith("/management/settings")}
           />
         </SidebarMenu>

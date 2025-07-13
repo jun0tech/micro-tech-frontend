@@ -1,5 +1,12 @@
 import Breadcrumb from "@/components/common/Breadcrumb";
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { ROUTES } from "@/constants/routes";
 import { Eye, MoreVertical, PenSquare, Search } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router";
@@ -125,7 +132,7 @@ export default function PurchaseRequests() {
           />
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
         </div>
-        <Link to="/purchase/new">
+        <Link to={ROUTES.APP.PURCHASE.NEW}>
           <Button className="bg-blue-600 hover:bg-blue-700 text-white">
             New Request
           </Button>
@@ -248,12 +255,23 @@ export default function PurchaseRequests() {
                 </td>
                 <td className="py-4 px-4 text-sm text-gray-500">
                   <div className="flex space-x-2">
-                    <Link
-                      to={`/purchase/order/${request.id}`}
-                      className="text-gray-600 hover:text-gray-900"
-                    >
-                      <Eye className="h-5 w-5" />
-                    </Link>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Link
+                            to={ROUTES.APP.PURCHASE.ORDER_DETAILS(request.id)}
+                            className="text-gray-600 hover:text-gray-900"
+                          >
+                            <Button variant="ghost" size="icon">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>View Details</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                     <button className="text-gray-600 hover:text-gray-900">
                       <PenSquare className="h-5 w-5" />
                     </button>

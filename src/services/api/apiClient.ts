@@ -45,6 +45,7 @@ apiClient.interceptors.response.use(
 
       switch (status) {
         case 401:
+          break;
           // Unauthorized - clear token and redirect to login
           localStorage.removeItem("authToken");
           localStorage.removeItem("user");
