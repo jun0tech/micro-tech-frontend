@@ -12,7 +12,9 @@ export function useDashboardStats() {
   return useQuery({
     queryKey: dashboardKeys.stats(),
     queryFn: () => dashboardService.getDashboardStats(),
-    staleTime: 2 * 60 * 1000, // 2 minutes
+    staleTime: 30 * 1000, // 30 seconds - reduced from 2 minutes for fresher data
     refetchOnWindowFocus: true,
+    refetchOnMount: "always", // Always refetch when component mounts
+    refetchInterval: 2 * 60 * 1000, // Refetch every 2 minutes automatically
   });
 }

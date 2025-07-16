@@ -2,9 +2,8 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ROUTES } from "@/constants/routes";
-import { ArrowLeft, Home, Search } from "lucide-react";
-import { Link, useNavigate } from "react-router";
+import { ArrowLeft, Search } from "lucide-react";
+import { useNavigate } from "react-router";
 
 export default function NotFound() {
   const navigate = useNavigate();
@@ -35,12 +34,12 @@ export default function NotFound() {
           </div>
 
           <div className="space-y-3">
-            <Link to={ROUTES.APP.DASHBOARD} className="block">
+            {/* <Link to={ROUTES.APP.DASHBOARD} className="block">
               <Button className="w-full">
                 <Home className="mr-2 h-4 w-4" />
                 Go to Dashboard
               </Button>
-            </Link>
+            </Link> */}
 
             <Button
               variant="outline"

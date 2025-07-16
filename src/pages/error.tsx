@@ -2,9 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ROUTES } from "@/constants/routes";
-import { AlertTriangle, Home, RefreshCw } from "lucide-react";
-import { Link } from "react-router";
+import { AlertTriangle, RefreshCw } from "lucide-react";
 
 interface ErrorPageProps {
   error?: Error;
@@ -80,12 +78,12 @@ export default function ErrorPage({
               Try Again
             </Button>
 
-            <Link to={ROUTES.APP.DASHBOARD} className="block">
+            {/* <Link to={ROUTES.APP.DASHBOARD} className="block">
               <Button variant="outline" className="w-full">
                 <Home className="mr-2 h-4 w-4" />
                 Go to Dashboard
               </Button>
-            </Link>
+            </Link> */}
           </div>
 
           <div className="pt-4 border-t border-gray-200">
