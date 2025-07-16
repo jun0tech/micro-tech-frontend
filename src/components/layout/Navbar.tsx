@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { useLogout } from "@/services/auth/useAuth";
 import {
   AlertTriangle,
   Bell,
@@ -72,6 +73,8 @@ export function Navbar() {
       category: "system",
     },
   ]);
+
+  const { mutate: logout } = useLogout();
 
   const unreadCount = notifications.filter((n) => !n.read).length;
   const recentNotifications = notifications.slice(0, 5);
@@ -225,8 +228,13 @@ export function Navbar() {
                 <span>Settings</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-red-600 focus:text-red-600">
-                <LogOut className="mr-2 h-4 w-4" />
+              <DropdownMenuItem
+                className="text-red-600 focus:text-red-600"
+                onClick={() => {
+                  logout();
+                }}
+              >
+                <LogOut className="mr-2 h-4 w-4 text-red-600" />
                 <span>Log out</span>
               </DropdownMenuItem>
             </DropdownMenuContent>

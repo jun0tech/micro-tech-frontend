@@ -1,4 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router";
+import { toast } from "sonner";
 import { getInvalidationKeys, queryKeys } from "../api/queryKeys";
 import type {
   LoginRequest,
@@ -104,9 +106,13 @@ export const useRegister = () => {
 // Logout mutation hook
 export const useLogout = () => {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   return useMutation({
-    mutationFn: authService.logout,
+    mutationFn: async () => {
+      // Only clear local storage, don't call API
+      authService.clearLocalStorage();
+    },
     onSuccess: () => {
       // Clear all auth-related cache
       queryClient.removeQueries({ queryKey: queryKeys.auth.all });
@@ -119,6 +125,11 @@ export const useLogout = () => {
 
       // Reset query client to clear all cached data
       queryClient.clear();
+
+      // Show success message for intentional logout
+      toast.success("You have been logged out successfully.");
+      // Redirect to login after a short delay to allow toast to show
+      setTimeout(() => navigate("/login", { replace: true }), 100);
     },
     onError: (error) => {
       console.warn(
@@ -128,6 +139,10 @@ export const useLogout = () => {
       // Even if server logout fails, clear local storage
       authService.clearLocalStorage();
       queryClient.clear();
+
+      // Show message even if logout request failed
+      toast.info("You have been logged out.");
+      setTimeout(() => navigate("/login", { replace: true }), 300);
     },
   });
 };
@@ -234,10 +249,12 @@ export const useRefreshToken = () => {
       // Update user data
       queryClient.setQueryData(queryKeys.auth.user(), data.user);
     },
-    onError: () => {
-      // If refresh fails, clear all auth data and force re-login
-      authService.clearLocalStorage();
-      queryClient.removeQueries({ queryKey: queryKeys.auth.all });
+    onError: (error) => {
+      // Only clear auth data for specific refresh token errors, not all errors
+      console.warn("Token refresh failed:", error);
+
+      // Let the API client handle clearing auth data and redirecting
+      // Don't automatically clear here to avoid unnecessary logouts for temporary errors
     },
   });
 };

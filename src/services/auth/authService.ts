@@ -95,12 +95,17 @@ export const authService = {
           const expiryTime = Date.now() + data.expiresIn * 1000;
           localStorage.setItem("tokenExpiry", expiryTime.toString());
         }
+
+        // Update stored user data if provided
+        if (data.user) {
+          localStorage.setItem("user", JSON.stringify(data.user));
+        }
       }
 
       return data;
     } catch (error) {
-      // If refresh fails, clear storage and force re-login
-      this.clearLocalStorage();
+      // Don't automatically clear storage here - let the API client handle it
+      // This allows for better error handling and user experience
       return handleApiError(error);
     }
   },
@@ -184,7 +189,8 @@ export const authService = {
     if (expiry) {
       const expiryTime = parseInt(expiry, 10);
       if (Date.now() > expiryTime) {
-        this.clearLocalStorage();
+        // Don't automatically clear storage here - let API client handle token refresh
+        // This prevents unnecessary logouts when tokens can be refreshed
         return false;
       }
     }

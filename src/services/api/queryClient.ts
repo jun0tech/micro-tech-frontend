@@ -9,19 +9,8 @@ const queryConfig: DefaultOptions = {
     // Time until data is garbage collected (10 minutes)
     gcTime: 10 * 60 * 1000,
 
-    // Retry failed requests (except for 4xx errors)
-    retry: (failureCount: number, error: Error) => {
-      // Don't retry for 4xx client errors
-      if (error instanceof Error && "status" in error) {
-        const status = (error as any).status;
-        if (status >= 400 && status < 500) {
-          return false;
-        }
-      }
-
-      // Retry up to 3 times for other errors
-      return failureCount < 3;
-    },
+    // Retry failed requests only once
+    retry: 1,
 
     // Retry delay that increases exponentially
     retryDelay: (attemptIndex: number) =>
