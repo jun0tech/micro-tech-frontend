@@ -2,7 +2,9 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertTriangle, RefreshCw } from "lucide-react";
+import { ROUTES } from "@/constants/routes";
+import { AlertTriangle, Home, RefreshCw } from "lucide-react";
+import { useNavigate } from "react-router";
 
 interface ErrorPageProps {
   error?: Error;
@@ -17,6 +19,8 @@ export default function ErrorPage({
   title = "Something went wrong",
   message = "An unexpected error occurred. Please try again or contact support if the problem persists.",
 }: ErrorPageProps) {
+  const navigate = useNavigate();
+
   const handleReload = () => {
     window.location.reload();
   };
@@ -78,12 +82,17 @@ export default function ErrorPage({
               Try Again
             </Button>
 
-            {/* <Link to={ROUTES.APP.DASHBOARD} className="block">
-              <Button variant="outline" className="w-full">
-                <Home className="mr-2 h-4 w-4" />
-                Go to Dashboard
-              </Button>
-            </Link> */}
+            <Button
+              variant="outline"
+              className="w-full cursor-pointer"
+              onClick={() => {
+                navigate(ROUTES.APP.DASHBOARD, { replace: true });
+                handleReload();
+              }}
+            >
+              <Home className="mr-2 h-4 w-4" />
+              Go to Dashboard
+            </Button>
           </div>
 
           <div className="pt-4 border-t border-gray-200">
