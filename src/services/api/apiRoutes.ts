@@ -19,11 +19,11 @@ export const API_ROUTES = {
   inventoryDelete: "/inventory/", // DELETE /inventory/{id}/
 
   // Project endpoints - following REST conventions
-  projectList: "/project/project/",
-  projectDetail: "/project/project/", // GET/PUT/DELETE /project/project/{id}/
-  projectCreate: "/project/project/", // POST /project/project/
-  projectEdit: "/project/project/", // PUT /project/project/{id}/
-  projectDelete: "/project/project/", // DELETE /project/project/{id}/
+  projectList: "/project/",
+  projectDetail: "/project/", // GET/PUT/DELETE /project/project/{id}/
+  projectCreate: "/project/", // POST /project/project/
+  projectEdit: "/project/", // PUT /project/project/{id}/
+  projectDelete: "/project/", // DELETE /project/project/{id}/
 
   // Supplier endpoints - following REST conventions
   supplierList: "/supplier/supplier/",
